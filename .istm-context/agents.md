@@ -134,6 +134,14 @@ Before adding or changing frontend UI, verify the rendered parent width and alig
 
 ---
 
+## Single Color Rule
+
+The platform has ONE primary interactive color: #4630EB (Expo inspired bright blue).
+
+Blue means: action, interaction, selection. Blue must remain scarce and meaningful. There is no secondary brand color. Red, yellow, and green appear only with semantic meaning (error, warning, success). Map visualization colors appear only when representing actual data categories.
+
+---
+
 # Hybrid AI Architecture Rules
 
 ## Normal software handles:

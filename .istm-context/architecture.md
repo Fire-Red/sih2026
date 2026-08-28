@@ -7,6 +7,7 @@ The architecture should be:
 - understandable
 - scalable according to project constraints
 - honest about data provenance (every external record tracks its source, verification date, and status)
+- visually restrained (single primary color #4630EB for interaction, no decorative color)
 - hybrid AI (use AI selectively, deterministic logic where it is better)
 - geospatially aware (location is a first class citizen in every query)
 - role aware (7 distinct roles with distinct permissions and views)
