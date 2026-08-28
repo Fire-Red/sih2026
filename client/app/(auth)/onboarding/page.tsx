@@ -96,11 +96,13 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     const s = getSession();
-    if (s) {
-      setCurrentSession(s);
-      if (s.role) setSelectedRole(s.role);
+    if (!s) {
+      router.push("/login");
+      return;
     }
-  }, []);
+    setCurrentSession(s);
+    if (s.role) setSelectedRole(s.role);
+  }, [router]);
 
   const handleAutoLocate = () => {
     if (!navigator.geolocation) {
@@ -162,14 +164,18 @@ export default function OnboardingPage() {
   };
 
   const finalizeOnboarding = async () => {
+    if (!session) {
+      router.push("/login");
+      return;
+    }
     setSaving(true);
     try {
       const updated: UserSession = {
-        id: session?.id || "usr-" + Math.random().toString(36).substring(2, 9),
-        name: session?.name || "User",
-        email: session?.email || "user@example.com",
+        id: session.id,
+        name: session.name || "User",
+        email: session.email,
         role: selectedRole,
-        token: session?.token,
+        token: session.token,
       };
 
       setSession(updated);

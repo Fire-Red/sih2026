@@ -8,7 +8,7 @@ import {
   User as FirebaseUser,
 } from "firebase/auth";
 import { auth } from "./config";
-import { setSession, clearSession } from "@/lib/auth/session";
+import { setSession, clearSession, getSession } from "@/lib/auth/session";
 import { UserRole, UserSession } from "@/types/auth";
 
 export async function registerWithEmail(
@@ -46,12 +46,18 @@ export async function loginWithEmail(
   const user = userCredential.user;
   const token = await user.getIdToken();
 
-  // Retrieve existing stored role if available or default to citizen
+  // Load existing session role if already stored, fallback to citizen
+  const existingSession = getSession();
+  const preservedRole =
+    existingSession && existingSession.id === user.uid
+      ? existingSession.role
+      : "citizen";
+
   const session: UserSession = {
     id: user.uid,
     name: user.displayName || email.split("@")[0],
     email: user.email || email,
-    role: "citizen",
+    role: preservedRole,
     token,
   };
 
@@ -67,11 +73,18 @@ export async function loginWithGoogle(): Promise<UserSession> {
   const user = userCredential.user;
   const token = await user.getIdToken();
 
+  // Load existing session role if already stored, fallback to citizen
+  const existingSession = getSession();
+  const preservedRole =
+    existingSession && existingSession.id === user.uid
+      ? existingSession.role
+      : "citizen";
+
   const session: UserSession = {
     id: user.uid,
     name: user.displayName || user.email?.split("@")[0] || "User",
     email: user.email || "",
-    role: "citizen",
+    role: preservedRole,
     token,
   };
 

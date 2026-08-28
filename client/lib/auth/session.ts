@@ -7,10 +7,20 @@ export function getSession(): UserSession | null {
   const raw = localStorage.getItem(SESSION_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as UserSession;
+    const parsed = JSON.parse(raw) as UserSession;
+    if (!parsed || !parsed.id || !parsed.email) return null;
+    return parsed;
   } catch {
     return null;
   }
+}
+
+export function requireSession(): UserSession | null {
+  const session = getSession();
+  if (!session || !session.id) {
+    return null;
+  }
+  return session;
 }
 
 export function setSession(session: UserSession): void {
