@@ -1,5 +1,4 @@
 # AI Harness
 
-
 # @istmx/skills Context
-@.istm-context/agents.md
+@/workspaces/web/.istm-context/agents.md
