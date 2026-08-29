@@ -62,9 +62,17 @@
   - Implemented `/problems` public directory with search, filtering, team quotas, and pitch drawer.
   - Fixed login flow to check persisted profile and redirect already onboarded users straight to `/dashboard`.
   - Fixed onboarding to prefill and preserve stored profile and geographic preferences.
-- [x] Created Pull Request & Merged main updates:
-  - Raised [PR #3](https://github.com/Fire-Red/sih2026/pull/3) on branch `feat/rag-agent-and-api-routes`.
-  - Resolved all merge conflicts cleanly and verified zero TypeScript errors.
-- [x] Pushed schema updates to live Neon PostgreSQL via `drizzle-kit push` and confirmed the remote schema changes were applied successfully.
+- [x] Hardened API Routes, Database Transactions, and Server Safety:
+  - Wrapped quota validation, conditional db-side increments (`appliedTeamsCount`), and application inserts into atomic transactions in `/api/applications`.
+  - Added unique constraint composite on `problem_applications(problem_id, team_id)` and uniqueness on `active_projects(problem_id)`.
+  - Validated `maxTeamsAllowed` as a positive integer on `/api/problems`.
+  - Wrapped project creation and state transitions in an atomic transaction in `/api/projects`, enforcing `selectedTeamId IS NULL` condition and validating application ownership.
+  - Converted in-memory filter loops to direct SQL `where(and(...))` clauses across `applications` and `projects` routes.
+  - Integrated active session and profile `reporterId` linkage when citizens submit reports, and resolved reporter identifiers against the `users` table.
+  - Updated citizen report wizard step 2 with required district validation and safe functional state updating for attachments.
+  - Executed tool dispatch in `CivicAgent.run` and returned final LLM responses with `ToolMessage`.
+  - Improved `RAGService` with embedding try/catch boundaries, server-side error logging, generic user feedback, and calibrated similarity thresholding (`0.65`).
+  - Hardened CORS configuration with trusted origins and secure headers in `server/app/main.py`.
+  - Cleared duplicate date headers in `error-memory.md` and synchronous state dispatch in `workspace-frame.tsx`.
 - [ ] Build Government Review & Winner Selection Console (`/government/manage`).
 - [ ] Build Selected Team Active Project Workspace (`/projects/[id]`).
