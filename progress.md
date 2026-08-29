@@ -39,6 +39,21 @@
   - **LandingFooter** ([`landing-footer.tsx`](file:///workspaces/web/client/components/landing/landing-footer.tsx)): Structured directory footer with accreditation notices.
 
 ## Current Sprint Deliverables
+- [x] Fixed the report issue section and evidence intake:
+  - Improved the topic, title, description, affected-people, and urgency layout with clearer hierarchy and larger touch targets.
+  - Added device file selection for photos and documents with a 5 MB guard and attached-file state.
+  - Kept public evidence links supported alongside device files.
+- [x] Fixed dashboard sidebar overlap by reserving the full expanded sidebar width on desktop content.
+- [x] Defined the internal India ready MVP direction:
+  - Route reports by state, department, jurisdiction, and officer workload.
+  - Keep officer selection out of the citizen form.
+  - Support duplicate reports, related problem clusters, central review, and manual reassignment.
+  - Connect official government portals through verified directory links until approved APIs are available.
+- [x] Rebuilt the citizen report intake surface:
+  - Reduced the flow to issue, location, evidence, and review.
+  - Added optional location, urgency, affected population, and evidence fields.
+  - Added an AI support preview for related reports, routing suggestions, and prior solutions without activating automation.
+  - Restored the protected workspace shell around report submission.
 - [x] Fixed the runtime Turbopack chunk loading failure by clearing the stale generated cache and verifying a clean development server serves all referenced JavaScript assets.
 - [x] Replaced the dashboard top navigation with a responsive motion sidebar:
   - Persistent desktop rail with an animated expanded panel.
@@ -51,7 +66,15 @@
   - Reduced onboarding visual density and clarified the step sequence.
   - Replaced fabricated dashboard metric panels with role aware next actions.
   - Verified login, registration, onboarding, and dashboard routes return successfully from the local app.
-- [ ] Update Drizzle ORM Schema (`client/lib/db/schema.ts`) with `student_teams`, `problem_applications` (video + PPT support), and `active_projects`.
+- [x] Initialized Root `.gitignore` protecting secrets (`.env*`), Python virtual environments (`.venv`), node_modules, and build outputs.
+- [x] Updated Drizzle ORM Schema (`client/lib/db/schema.ts`) with `studentTeams`, `problemApplications` (video + PPT pitch support), and `activeProjects` (milestones & pilot tracking).
+- [x] Implemented Next.js API Routes:
+  - `GET /api/problems` & `POST /api/problems`: Category/district/status filtering and problem validation.
+  - `GET /api/teams` & `POST /api/teams`: Student team creation with member list and faculty mentor.
+  - `GET /api/applications` & `POST /api/applications`: Pitch submission with video/PPT URLs and quota enforcement.
+  - `GET /api/projects` & `POST /api/projects`: Active project generation with 4-phase milestone tracking and winner assignment.
+  - `POST /api/reports` & `GET /api/reports`: Citizen report registration and listing.
+  - `POST /api/users/profile` & `GET /api/users/profile`: Multi-role user profile persistence.
 - [ ] Push schema updates to live Neon PostgreSQL via `drizzle-kit push`.
 - [ ] Build All Problem Statements Directory (`/problems`) with live team quota indicator and application drawer.
 - [ ] Build Government Review & Winner Selection Console (`/government/manage`).

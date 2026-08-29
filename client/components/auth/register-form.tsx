@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { registerWithEmail } from "@/lib/firebase/auth-service";
+import { getSession } from "@/lib/auth/session";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 export function RegisterForm() {
@@ -16,6 +17,10 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (getSession()) router.replace("/dashboard");
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

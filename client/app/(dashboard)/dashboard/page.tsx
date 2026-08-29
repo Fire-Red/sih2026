@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, FileText, Layers3, MapPin, UserRound } from "lucide-react";
@@ -46,8 +46,10 @@ export default function DashboardPage() {
       router.push("/login");
       return;
     }
-    setSession(currentSession);
-    setLoading(false);
+    startTransition(() => {
+      setSession(currentSession);
+      setLoading(false);
+    });
   }, [router]);
 
   if (loading || !session) {
@@ -61,7 +63,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <DashboardSidebar session={session} />
-      <main className="min-h-screen px-4 py-8 sm:px-8 lg:pl-28 lg:pr-12 lg:py-12">
+      <main className="min-h-screen px-4 py-8 sm:px-8 lg:py-12 lg:pl-72 lg:pr-12">
         <div className="mx-auto max-w-5xl">
           <header className="flex flex-col gap-6 border-b border-border pb-8 sm:flex-row sm:items-end sm:justify-between">
             <div>

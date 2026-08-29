@@ -1,6 +1,6 @@
 import React from "react";
 import { CitizenReportWizard } from "@/components/reports/citizen-report-wizard";
-import { LandingNav } from "@/components/landing/landing-nav";
+import { WorkspaceFrame } from "@/components/dashboard/workspace-frame";
 
 export const metadata = {
   title: "Submit a community problem • CivicPulse",
@@ -9,12 +9,5 @@ export const metadata = {
 };
 
 export default function CitizenReportPage() {
-  return (
-    <div className="min-h-screen bg-surface-soft flex flex-col">
-      <LandingNav />
-      <main className="flex-1">
-        <CitizenReportWizard />
-      </main>
-    </div>
-  );
+  return <WorkspaceFrame><CitizenReportWizard /></WorkspaceFrame>;
 }
