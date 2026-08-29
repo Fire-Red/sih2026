@@ -8,18 +8,20 @@ interface AuthHeaderProps {
 
 export function AuthHeader({ title, subtitle }: AuthHeaderProps) {
   return (
-    <div className="text-center mb-8">
-      <Link href="/" className="inline-flex items-center gap-2 mb-6 group">
-        <span className="w-5 h-5 rounded-full bg-primary inline-block transition-transform group-hover:scale-105" />
-        <span className="font-medium text-lg tracking-[-0.02em] text-foreground">
+    <div className="mb-8 text-center">
+      <Link href="/" className="mb-7 inline-flex items-center gap-2 group">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground transition-transform group-hover:scale-105">
+          <span className="text-primary-foreground text-xs font-semibold">C</span>
+        </span>
+        <span className="text-lg font-medium tracking-[-0.02em] text-foreground">
           CivicPulse
         </span>
       </Link>
-      <h1 className="text-2xl sm:text-3xl font-normal tracking-[-0.03em] text-foreground">
+      <h1 className="text-3xl font-medium tracking-[-0.04em] text-foreground">
         {title}
       </h1>
       {subtitle && (
-        <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto">
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
           {subtitle}
         </p>
       )}

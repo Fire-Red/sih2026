@@ -4,10 +4,10 @@ import { RegisterForm } from "@/components/auth/register-form";
 
 export default function RegisterPage() {
   return (
-    <div className="bg-card border border-border-soft rounded-3xl p-6 sm:p-8 shadow-xs">
+    <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
       <AuthHeader
         title="Create your account"
-        subtitle="Join the national civic intelligence and problem solving network."
+        subtitle="Set up a workspace for your role."
       />
       <RegisterForm />
     </div>

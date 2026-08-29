@@ -3,22 +3,22 @@ import { Building2, ArrowUpRight, MapPin } from "lucide-react";
 
 const institutions = [
   {
-    name: "Birla Institute of Technology, Mesra",
-    location: "Ranchi, Jharkhand",
+    name: "Regional engineering institute",
+    location: "North district",
     capabilities: ["Hydraulic Network Modeling", "Embedded Telemetry", "Water Desalination & Filtration"],
     labs: "Department of Civil & Environmental Engineering",
     fit: "94.2% Capability Match",
   },
   {
-    name: "Indian Institute of Technology (IIT ISM)",
-    location: "Dhanbad, Jharkhand",
+    name: "Applied science institute",
+    location: "Central district",
     capabilities: ["Hydrogeology Sensing", "Heavy Metal Assay", "Groundwater Telemetry"],
     labs: "Centre of Excellence in Mining & Environment",
     fit: "88.6% Capability Match",
   },
   {
-    name: "National Institute of Technology (NIT)",
-    location: "Jamshedpur, Jharkhand",
+    name: "Technology institute",
+    location: "Eastern district",
     capabilities: ["Sensor Fabrication", "Embedded Systems", "Cold-Chain Telemetry"],
     labs: "Micro-electronics & Sensor Fabrication Lab",
     fit: "82.0% Capability Match",

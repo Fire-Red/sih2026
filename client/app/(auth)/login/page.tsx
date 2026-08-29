@@ -2,16 +2,14 @@ import React from "react";
 import { AuthHeader } from "@/components/auth/auth-header";
 import { LoginForm } from "@/components/auth/login-form";
 
-
 export default function LoginPage() {
   return (
-    <div className="bg-card border border-border-soft rounded-3xl p-6 sm:p-8 shadow-xs">
+    <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
       <AuthHeader
-        title="Sign in to CivicPulse"
-        subtitle="Access validated civic intelligence, capability assembly, and problem registries."
+        title="Welcome back"
+        subtitle="Sign in to continue to your workspace."
       />
       <LoginForm />
-     
     </div>
   );
 }

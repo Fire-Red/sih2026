@@ -1,238 +1,106 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
-import { UserSession } from "@/types/auth";
-import { DashboardNav } from "@/components/dashboard/dashboard-nav";
-import {
-  Activity,
-  AlertTriangle,
-  Building2,
-  CheckCircle2,
-  Clock,
-  Compass,
-  FileText,
-  Flame,
-  GraduationCap,
-  Landmark,
-  Layers,
-  MapPin,
-  Plus,
-  Sparkles,
-  Users,
-  ArrowRight,
-} from "lucide-react";
 import Link from "next/link";
+import { ArrowRight, FileText, Layers3, MapPin, UserRound } from "lucide-react";
+import { getSession } from "@/lib/auth/session";
+import { useUserStore } from "@/store/use-user-store";
+import { UserRole, UserSession } from "@/types/auth";
+import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { Button } from "@/components/ui/button";
+
+interface RoleContent {
+  label: string;
+  title: string;
+  description: string;
+  primaryLabel: string;
+  primaryHref: string;
+}
+
+const roleContent: Record<UserRole, RoleContent> = {
+  citizen: { label: "Citizen workspace", title: "Start with what you know.", description: "Share a local problem with enough context for others to act on it.", primaryLabel: "Report a problem", primaryHref: "/report" },
+  student: { label: "Student workspace", title: "Find a problem worth solving.", description: "Explore open problems and discover where your skills can contribute.", primaryLabel: "Explore problems", primaryHref: "/problems" },
+  government: { label: "Government workspace", title: "Review what needs attention.", description: "Move from incoming reports to clear, reviewable problem records.", primaryLabel: "Review problems", primaryHref: "/problems" },
+  institution: { label: "Institution workspace", title: "Make your capabilities visible.", description: "Keep your profile ready for problems that need your expertise.", primaryLabel: "Explore problems", primaryHref: "/problems" },
+  industry: { label: "Partner workspace", title: "Find a useful place to contribute.", description: "Explore problem areas where technology, funding, or deployment support is needed.", primaryLabel: "Explore problems", primaryHref: "/problems" },
+  admin: { label: "Admin workspace", title: "Keep the platform trustworthy.", description: "Review the working system and maintain reliable records for every user.", primaryLabel: "View problem records", primaryHref: "/problems" },
+};
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [session, setSessionState] = useState<UserSession | null>(null);
+  const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const userProfile = useUserStore((state) => state.user);
 
   useEffect(() => {
-    const s = getSession();
-    if (!s) {
+    const currentSession = getSession();
+    if (!currentSession) {
       router.push("/login");
-    } else {
-      setSessionState(s);
-      setLoading(false);
+      return;
     }
+    setSession(currentSession);
+    setLoading(false);
   }, [router]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+  if (loading || !session) {
+    return <div className="min-h-screen bg-background" aria-label="Loading workspace" />;
   }
 
+  const content = roleContent[session.role];
+  const firstName = session.name.split(" ")[0] || "there";
+  const location = userProfile?.geoContext?.district;
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <DashboardNav session={session} />
-
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8 space-y-8">
-        {/* Welcome Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-border-soft">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-normal tracking-[-0.03em] text-foreground">
-              Welcome back, {session?.name?.split(" ")[0] || "Innovator"}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Active role: <span className="text-foreground font-medium capitalize">{session?.role}</span> • Session verified via Firebase Auth
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/report"
-              className="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-primary hover:bg-[#003ecc] text-white text-xs font-medium transition-colors"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Submit Issue Signal</span>
-            </Link>
-            <Link
-              href="/onboarding"
-              className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-surface-soft border border-border-soft hover:bg-background text-foreground text-xs font-medium transition-colors"
-            >
-              <span>Edit Profile</span>
-            </Link>
-          </div>
-        </div>
-
-        {/* Real-time Status Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-5 rounded-2xl bg-surface-soft border border-border-soft">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Active Problem Signals</span>
-              <Activity className="h-4 w-4 text-primary" />
+    <div className="min-h-screen bg-background">
+      <DashboardSidebar session={session} />
+      <main className="min-h-screen px-4 py-8 sm:px-8 lg:pl-28 lg:pr-12 lg:py-12">
+        <div className="mx-auto max-w-5xl">
+          <header className="flex flex-col gap-6 border-b border-border pb-8 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.16em] text-primary">{content.label}</p>
+              <h1 className="text-3xl font-medium tracking-[-0.05em] text-foreground sm:text-4xl">{getGreeting()}, {firstName}</h1>
+              {location && <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground"><MapPin className="h-4 w-4" />{location}</p>}
             </div>
-            <p className="text-2xl font-normal text-foreground mt-2">128</p>
-            <p className="text-[11px] text-muted-foreground mt-1">Across 14 districts</p>
-          </div>
+            <Link href={content.primaryHref}><Button className="h-11 gap-2 rounded-lg px-5">{content.primaryLabel}<ArrowRight className="h-4 w-4" /></Button></Link>
+          </header>
 
-          <div className="p-5 rounded-2xl bg-surface-soft border border-border-soft">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Validated Systemic DNAs</span>
-              <Layers className="h-4 w-4 text-primary" />
+          <section className="grid gap-4 py-8 md:grid-cols-[1.3fr_0.7fr]">
+            <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+              <div className="mb-12 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Layers3 className="h-5 w-5" /></div>
+              <p className="max-w-xl text-2xl font-medium tracking-[-0.04em] text-foreground sm:text-3xl">{content.title}</p>
+              <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">{content.description}</p>
             </div>
-            <p className="text-2xl font-normal text-foreground mt-2">24</p>
-            <p className="text-[11px] text-emerald-600 mt-1">4 challenges published</p>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-surface-soft border border-border-soft">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Registered Labs & Unis</span>
-              <Building2 className="h-4 w-4 text-primary" />
+            <div className="rounded-2xl border border-border bg-muted/40 p-6 sm:p-8">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Next step</p>
+              <h2 className="mt-4 text-lg font-medium tracking-[-0.02em] text-foreground">Your workspace is ready.</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">Choose one action to begin. You can return here whenever you need a clear starting point.</p>
+              <Link href={content.primaryHref} className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80">{content.primaryLabel}<ArrowRight className="h-4 w-4" /></Link>
             </div>
-            <p className="text-2xl font-normal text-foreground mt-2">42</p>
-            <p className="text-[11px] text-muted-foreground mt-1">AISHE verified directory</p>
-          </div>
+          </section>
 
-          <div className="p-5 rounded-2xl bg-surface-soft border border-border-soft">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Active Field Pilots</span>
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <section className="border-t border-border pt-6">
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Available now</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Link href="/problems" className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground"><Layers3 className="h-4 w-4" /></span>
+                <span className="flex-1 text-sm font-medium text-foreground">Browse problem records</span>
+                <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+              </Link>
+              <Link href={session.role === "citizen" ? "/track" : "/report"} className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground">{session.role === "citizen" ? <UserRound className="h-4 w-4" /> : <FileText className="h-4 w-4" />}</span>
+                <span className="flex-1 text-sm font-medium text-foreground">{session.role === "citizen" ? "Track your reports" : "Share a problem"}</span>
+                <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+              </Link>
             </div>
-            <p className="text-2xl font-normal text-foreground mt-2">9</p>
-            <p className="text-[11px] text-muted-foreground mt-1">IoT & Ground verified</p>
-          </div>
-        </div>
-
-        {/* Action Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Feed Column */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="p-6 rounded-3xl bg-card border border-border-soft space-y-4 shadow-xs">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Flame className="h-4 w-4 text-amber-500" />
-                  <h2 className="text-base font-medium text-foreground">Recent High-Priority Problem Clusters</h2>
-                </div>
-                <span className="text-xs text-primary font-medium hover:underline cursor-pointer">View radar</span>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  {
-                    title: "Groundwater Heavy Metal Contamination & Solar Filtration Need",
-                    location: "Rupnagar / Anandpur Sahib Sub-basin",
-                    signals: 18,
-                    urgency: "High",
-                    category: "Water Resources",
-                  },
-                  {
-                    title: "Rural Agricultural Cold Storage & Off-Grid Perishable Logistics",
-                    location: "Shimla Apple Belt / Theog District",
-                    signals: 14,
-                    urgency: "Medium",
-                    category: "AgriTech / Logistics",
-                  },
-                  {
-                    title: "Hill-Slope Landslide Early Warning & Vibration Telemetry",
-                    location: "Kullu - Mandi Highway Corridor",
-                    signals: 26,
-                    urgency: "Critical",
-                    category: "Disaster Management",
-                  },
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    className="p-4 rounded-2xl bg-surface-soft border border-border-soft flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-primary/40 transition-colors"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-foreground">{item.title}</span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                          item.urgency === "Critical"
-                            ? "bg-red-100 text-red-700"
-                            : item.urgency === "High"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-blue-100 text-blue-700"
-                        }`}>
-                          {item.urgency}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          <span>{item.location}</span>
-                        </span>
-                        <span>•</span>
-                        <span>{item.signals} citizen signals fused</span>
-                      </div>
-                    </div>
-
-                    <Link
-                      href="/validate"
-                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-[#003ecc] shrink-0"
-                    >
-                      <span>Examine DNA</span>
-                      <ArrowRight className="h-3 w-3" />
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Shortcuts Side Column */}
-          <div className="space-y-6">
-            <div className="p-6 rounded-3xl bg-surface-soft border border-border-soft space-y-4">
-              <h2 className="text-sm font-medium text-foreground">Stakeholder Portals</h2>
-              <div className="space-y-2">
-                {[
-                  { name: "Problem Validation Console", icon: <Landmark className="h-4 w-4" />, href: "/validate" },
-                  { name: "Signal Reporting Wizard", icon: <FileText className="h-4 w-4" />, href: "/report" },
-                  { name: "Capability Matching Engine", icon: <Building2 className="h-4 w-4" />, href: "/institution/capabilities" },
-                  { name: "Student Innovation Challenges", icon: <GraduationCap className="h-4 w-4" />, href: "/student/dashboard" },
-                ].map((link, idx) => (
-                  <Link
-                    key={idx}
-                    href={link.href}
-                    className="flex items-center justify-between p-3 rounded-xl bg-background border border-border-soft hover:border-primary/40 text-xs font-medium text-foreground transition-colors group"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-primary">{link.icon}</span>
-                      <span>{link.name}</span>
-                    </div>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-5 rounded-3xl border border-primary/20 bg-primary/5 space-y-2">
-              <div className="flex items-center gap-2 text-primary text-xs font-medium">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>AI Problem Fusion Engine</span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Background Mistral Embeddings & PostGIS spatial clustering are active for All-India signal normalization.
-              </p>
-            </div>
-          </div>
+          </section>
         </div>
       </main>
     </div>

@@ -1,5 +1,7 @@
 # SIH26043 Architecture
 
+Public interface copy must remain location neutral. Regional scope belongs in data and operations, not in general page headings, navigation, metadata, or promotional copy.
+
 ## Architecture Goals
 
 The architecture should be:

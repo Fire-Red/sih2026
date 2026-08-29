@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -5,32 +7,36 @@ import { Button } from "@/components/ui/button";
 
 export function LandingHero() {
   return (
-    <section className="pt-20 pb-24 px-6 bg-background">
-      <div className="max-w-4xl mx-auto text-center">
-        {/* Main Headline */}
-        <h1 className="text-4xl sm:text-6xl font-normal tracking-[-0.035em] text-foreground leading-[1.08]">
-          Connecting societal problems to verified university and industry solvers.
+    <section
+      className="relative min-h-[92vh] flex flex-col justify-center items-center px-6 text-center bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/hero-bg.png')" }}
+    >
+      <div className="max-w-4xl mx-auto flex flex-col items-center">
+        {/* Civic Platform Title */}
+        <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-[-0.035em] text-white leading-[1.05]">
+          From citizen signal <br />
+          to verified systemic impact.
         </h1>
 
-        {/* Subhead */}
-        <p className="mt-6 text-lg sm:text-xl text-muted-foreground font-normal max-w-2xl mx-auto leading-relaxed">
-          A structured civic platform that clusters citizen reported issues, decomposes the required technical capabilities, and matches multidisciplinary teams to build and verify solutions.
+        {/* Clean Subtitle */}
+        <p className="mt-6 text-base sm:text-xl font-medium text-white leading-relaxed max-w-2xl">
+          The Societal Problem Intelligence Platform. Decompose community challenges into required capabilities, match university teams, and deploy verified field solutions.
         </p>
 
-        {/* Action Buttons */}
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-          <Link href="/report">
-            <Button className="h-12 px-7 rounded-full bg-primary text-primary-foreground hover:bg-[#003ecc] font-medium text-sm shadow-xs">
-              <span>Submit a community report</span>
-              <ArrowRight className="h-4 w-4 ml-2" />
+        {/* Minimal High-Contrast CTAs */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
+          <Link href="/problems">
+            <Button className="h-11 px-7 rounded-xl bg-primary hover:bg-primary-deep text-white font-semibold text-sm gap-2 shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]">
+              Explore Open Problems
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
-          <Link href="/validate">
+          <Link href="/report">
             <Button
               variant="outline"
-              className="h-12 px-7 rounded-full bg-surface-soft border-border-soft text-foreground hover:bg-surface-strong font-medium text-sm"
+              className="h-11 px-6 rounded-xl bg-black/50 hover:bg-black/70 text-white font-semibold text-sm border-white/30 transition-all"
             >
-              <span>Government console</span>
+              Report Issue
             </Button>
           </Link>
         </div>

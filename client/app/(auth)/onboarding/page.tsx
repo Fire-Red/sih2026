@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getSession, setSession } from "@/lib/auth/session";
 import { UserRole, UserSession } from "@/types/auth";
+import { useUserStore } from "@/store/use-user-store";
 import {
   User,
   GraduationCap,
@@ -179,6 +180,62 @@ export default function OnboardingPage() {
       };
 
       setSession(updated);
+
+      // Build structured role profile
+      let roleProfileData = null;
+      if (selectedRole === "government") {
+        roleProfileData = {
+          department: department || "General Administration",
+          designation: designation || "Officer",
+        };
+      } else if (selectedRole === "student") {
+        roleProfileData = {
+          institutionName: organization || "University",
+          aisheCode: aisheCode || undefined,
+          department: department || "Engineering / Science",
+          skills: skills
+            ? skills.split(",").map((s) => s.trim()).filter(Boolean)
+            : [],
+        };
+      } else if (selectedRole === "institution") {
+        roleProfileData = {
+          institutionName: organization || "Institution",
+          aisheCode: aisheCode || undefined,
+          departments: department
+            ? department.split(",").map((d) => d.trim()).filter(Boolean)
+            : [],
+        };
+      } else if (selectedRole === "industry") {
+        roleProfileData = {
+          organizationName: organization || "Enterprise",
+          csrFocus: department || "General CSR",
+        };
+      }
+
+      // Update Zustand User Store
+      const { setUser, syncWithBackend } = useUserStore.getState();
+      setUser({
+        firebaseUid: session.id,
+        email: session.email,
+        displayName: session.name || null,
+        role: selectedRole,
+        isOnboarded: true,
+        geoContext: {
+          state: stateRegion,
+          district: district || cityTown,
+          pinCode: pincode,
+          latitude: geoCoords ? geoCoords.lat.toString() : null,
+          longitude: geoCoords ? geoCoords.lng.toString() : null,
+          formattedAddress: [cityTown, district, stateRegion, pincode]
+            .filter(Boolean)
+            .join(", "),
+        },
+        roleProfile: roleProfileData,
+      });
+
+      // Synchronize to Neon PostgreSQL database
+      await syncWithBackend();
+
       router.push("/dashboard");
     } finally {
       setSaving(false);
@@ -186,32 +243,32 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="bg-card border border-border-soft rounded-3xl p-5 sm:p-8 lg:p-10 shadow-xs w-full">
+    <div className="w-full rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-8">
       {/* Header & Step Indicator */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-border-soft">
+      <div className="mb-8 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-              Step {step} of {selectedRole === "citizen" ? 2 : 3}
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-primary">
+              Setup {step} of {selectedRole === "citizen" ? 2 : 3}
             </span>
             <span className="text-xs text-muted-foreground">
-              {step === 1 && "Select Stakeholder Role"}
-              {step === 2 && "Geographic Location"}
-              {step === 3 && "Institutional Credentials"}
+              {step === 1 && "Your role"}
+              {step === 2 && "Your location"}
+              {step === 3 && "Your details"}
             </span>
           </div>
-          <h1 className="text-lg sm:text-xl font-normal tracking-[-0.02em] text-foreground mt-1">
+          <h1 className="mt-2 text-2xl font-medium tracking-[-0.04em] text-foreground sm:text-3xl">
             {step === 1 && "Choose your role in the ecosystem"}
             {step === 2 && "Set your primary operational location"}
             {step === 3 && "Institutional credentials & verification"}
           </h1>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <div className={`w-7 h-1.5 rounded-full transition-all ${step >= 1 ? "bg-primary" : "bg-surface-strong"}`} />
-          <div className={`w-7 h-1.5 rounded-full transition-all ${step >= 2 ? "bg-primary" : "bg-surface-strong"}`} />
+        <div className="flex shrink-0 items-center gap-1.5" aria-label={`Step ${step} of ${selectedRole === "citizen" ? 2 : 3}`}>
+          <div className={`h-1.5 w-12 rounded-full transition-all ${step >= 1 ? "bg-primary" : "bg-muted"}`} />
+          <div className={`h-1.5 w-12 rounded-full transition-all ${step >= 2 ? "bg-primary" : "bg-muted"}`} />
           {selectedRole !== "citizen" && (
-            <div className={`w-7 h-1.5 rounded-full transition-all ${step >= 3 ? "bg-primary" : "bg-surface-strong"}`} />
+            <div className={`h-1.5 w-12 rounded-full transition-all ${step >= 3 ? "bg-primary" : "bg-muted"}`} />
           )}
         </div>
       </div>
@@ -219,7 +276,7 @@ export default function OnboardingPage() {
       {/* STEP 1: ROLE SELECTION (Compact 2/3 column layout fitting without scroll) */}
       {step === 1 && (
         <div className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-2">
             {ROLES.map((item) => {
               const isSelected = selectedRole === item.role;
               return (
@@ -227,10 +284,10 @@ export default function OnboardingPage() {
                   key={item.role}
                   type="button"
                   onClick={() => setSelectedRole(item.role)}
-                  className={`relative text-left p-3.5 sm:p-4 rounded-2xl border transition-all duration-150 flex flex-col justify-between cursor-pointer ${
+                    className={`relative flex cursor-pointer flex-col justify-between rounded-xl border p-4 text-left transition-all duration-150 ${
                     isSelected
-                      ? "bg-primary/5 border-primary shadow-xs ring-1 ring-primary"
-                      : "bg-surface-soft border-border-soft hover:border-primary/40 hover:bg-background"
+                      ? "border-primary bg-primary/5 ring-1 ring-primary"
+                      : "border-border bg-background hover:border-primary/40 hover:bg-muted/40"
                   }`}
                 >
                   <div>
@@ -238,8 +295,8 @@ export default function OnboardingPage() {
                       <div
                         className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border z-10 ${
                           isSelected
-                            ? "bg-primary text-white border-primary shadow-xs"
-                            : "bg-background border-border-soft text-primary"
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-card text-primary"
                         }`}
                       >
                         {item.icon}
@@ -248,7 +305,7 @@ export default function OnboardingPage() {
                       {isSelected ? (
                         <CheckCircle2 className="h-4 w-4 text-primary shrink-0 z-10" />
                       ) : (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-strong text-muted-foreground font-medium">
+                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                           {item.badge}
                         </span>
                       )}
@@ -270,7 +327,7 @@ export default function OnboardingPage() {
             <Button
               type="button"
               onClick={handleNext}
-              className="h-11 px-6 rounded-full bg-primary hover:bg-[#003ecc] text-white font-medium text-xs sm:text-sm transition-colors cursor-pointer flex items-center gap-2"
+              className="h-11 cursor-pointer gap-2 rounded-lg px-5 text-xs font-medium transition-colors hover:bg-primary/90 sm:text-sm"
             >
               <span>Continue to Location</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -286,7 +343,7 @@ export default function OnboardingPage() {
             type="button"
             onClick={handleAutoLocate}
             disabled={locating}
-            className="w-full p-3 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+            className="flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
           >
             {locating ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -372,7 +429,7 @@ export default function OnboardingPage() {
               type="button"
               onClick={handleNext}
               disabled={saving}
-              className="h-10 px-6 rounded-full bg-primary hover:bg-[#003ecc] text-white font-medium text-xs transition-colors cursor-pointer flex items-center gap-2"
+              className="h-10 cursor-pointer gap-2 rounded-lg px-5 text-xs font-medium transition-colors hover:bg-primary/90"
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -582,7 +639,7 @@ export default function OnboardingPage() {
               type="button"
               onClick={finalizeOnboarding}
               disabled={saving}
-              className="h-10 px-6 rounded-full bg-primary hover:bg-[#003ecc] text-white font-medium text-xs transition-colors cursor-pointer flex items-center gap-2"
+              className="h-10 cursor-pointer gap-2 rounded-lg px-5 text-xs font-medium transition-colors hover:bg-primary/90"
             >
               {saving ? (
                 <span className="flex items-center gap-2">

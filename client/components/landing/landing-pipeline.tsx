@@ -7,31 +7,39 @@ const steps = [
     number: "01",
     title: "Citizen reporting",
     description:
-      "Citizens submit local issues with descriptions, categories, and optional photos or documents.",
+      "Citizens submit local issues with location, category, severity, and optional photo evidence.",
     link: "/report",
-    linkText: "Submit report",
+    linkText: "Submit a report",
   },
   {
     number: "02",
-    title: "Problem clustering & validation",
+    title: "Problem clustering and validation",
     description:
-      "The system groups related reports across locations and domains for government review and formal problem definition.",
+      "Related reports group into candidate systemic problems across locations. Government officials review and formally validate each one.",
     link: "/validate",
-    linkText: "View console",
+    linkText: "View validation console",
   },
   {
     number: "03",
-    title: "Capability assembly",
+    title: "Published problem directory",
     description:
-      "Identifies required technical capabilities and matches them across universities, research departments, and industry partners.",
-    link: "/login",
-    linkText: "Explore partners",
+      "Validated problems publish to the open directory with a team quota. Citizens and students can see exactly what is being solved.",
+    link: "/problems",
+    linkText: "Browse problems",
   },
   {
     number: "04",
-    title: "Project execution & impact",
+    title: "Student team application",
     description:
-      "Teams submit proposals, implement prototypes, run field pilots, and record verified baseline and outcome measurements.",
+      "Student teams apply with a one-paragraph approach, a three-minute video walkthrough, and a presentation deck.",
+    link: "/problems",
+    linkText: "Apply with a team",
+  },
+  {
+    number: "05",
+    title: "Project execution and impact",
+    description:
+      "Government selects a winning team. An active project workspace opens with milestones, a pilot phase, and verified outcome tracking.",
     link: "/login",
     linkText: "Track projects",
   },
@@ -39,39 +47,39 @@ const steps = [
 
 export function LandingPipeline() {
   return (
-    <section id="how-it-works" className="py-20 bg-surface-soft px-6 border-t border-b border-border-soft">
+    <section id="how-it-works" className="py-20 bg-muted px-6 border-t border-b border-border">
       <div className="max-w-5xl mx-auto">
         <div className="max-w-xl mb-14">
-          <h2 className="text-3xl sm:text-4xl font-normal tracking-[-0.03em] text-foreground">
+          <h2 className="text-3xl sm:text-[32px] font-light tracking-[-0.03em] text-foreground">
             How the platform works
           </h2>
-          <p className="mt-3 text-base text-muted-foreground leading-relaxed">
-            A continuous workflow from initial community feedback to verified field implementation.
+          <p className="mt-3 text-base text-muted-foreground font-light leading-relaxed">
+            A continuous workflow from community signal to verified field deployment.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {steps.map((step, idx) => (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {steps.map((step) => (
             <div
-              key={idx}
-              className="p-6 rounded-2xl bg-card border border-border-soft flex flex-col justify-between"
+              key={step.number}
+              className="p-6 rounded-xl bg-card border border-border flex flex-col justify-between"
             >
               <div>
-                <span className="text-xl font-mono text-primary font-medium block mb-4">
+                <span className="text-xs font-medium text-primary tnum block mb-4">
                   {step.number}
                 </span>
-                <h3 className="text-lg font-medium text-foreground">
+                <h3 className="text-[15px] font-medium text-foreground leading-snug">
                   {step.title}
                 </h3>
-                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed font-light">
                   {step.description}
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-border-soft">
+              <div className="mt-6 pt-4 border-t border-border">
                 <Link
                   href={step.link}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-[#003ecc] transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-deep transition-colors"
                 >
                   <span>{step.linkText}</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -84,3 +92,4 @@ export function LandingPipeline() {
     </section>
   );
 }
+

@@ -1,40 +1,58 @@
 # CivicPulse Platform Implementation Progress
 
 ## Completed Deliverables
-- [x] Streamlined the landing page to a pure, clean **Light-Mode Minimalist Design System**:
-  - Primary Action Accent: **Coinbase Blue** (`#0052ff`) on pill CTAs (`rounded-full`) and inline links (`text-primary hover:text-[#003ecc]`).
-  - Typography: Clean Inter hierarchy with calm display weight 400 and clear text rhythm.
-  - Geometry: Soft pill buttons (`rounded-full`) and minimal 16px/24px rounded cards (`rounded-2xl`).
-  - Strict Anti-Clutter & No Fake Data Policy:
-    - Removed synthetic cluster metrics, mock stats, and repetitive duplicate cards.
-    - Removed cluttered eyebrows and artificial city lists.
-    - Simplified the presentation to essential information: Core problem-solution thesis, 4-step execution workflow, clean stakeholder entry portals, and transparent data provenance principles.
-- [x] Updated blueprint and styles:
-  - Updated [`.istm-context/design.md`](file:///workspaces/web/.istm-context/design.md) to document the clean light-mode specification.
-  - Updated [`client/app/globals.css`](file:///workspaces/web/client/app/globals.css) with clean semantic Tailwind v4 tokens.
-- [x] Modularized clean components in `client/components/landing/`:
-  - `LandingNav`: 64px minimal light navigation with circular wordmark and pill action button.
-  - `LandingHero`: Clear typography-first hero briefing without fake window frames.
-  - `LandingPipeline`: 4-step workflow (Citizen Reporting, Problem Clustering & Validation, Capability Assembly, Project Execution & Impact).
-  - `LandingRoles`: 6-card stakeholder portal directory with blue link highlights.
-  - `LandingProvenance`: Core principles of data integrity (Official directories, PostGIS spatial queries, human approval gates).
-  - `LandingFooter`: Minimal light footer.
-- [x] Verified full production compilation (`next build` exited with code 0).
+- [x] Refactored authentication, onboarding, and dashboard user experience:
+  - Login and registration now use focused centered forms.
+  - Onboarding now uses a clearer, lower density step layout.
+  - Dashboard content is role aware and no longer presents fabricated metrics.
+  - Dashboard navigation uses a responsive animated sidebar with mobile drawer support.
+  - Added reduced motion support and keyboard sidebar toggling.
+- [x] Resolved the development runtime chunk loading failure:
+  - Cleared the stale generated Next.js cache.
+  - Restarted a clean development server.
+  - Confirmed login, registration, onboarding, and dashboard routes render.
+  - Confirmed all JavaScript assets referenced by the login route return HTTP 200.
+- [x] Reframed the visual system as **Expo Notion Civic Editorial**:
+  - Replaced the saturated mesh palette with a warm near white canvas, deep ink, and one indigo action color.
+  - Kept glass for the image led hero and preview surfaces only.
+  - Added calm typography, medium geometry, restrained shadows, and reduced motion support.
+  - Updated [`.istm-context/design.md`](file:///workspaces/web/.istm-context/design.md) (v4.0.0) and [`client/app/globals.css`](file:///workspaces/web/client/app/globals.css).
+  - Updated the hero asset to the supplied landscape image and removed internal brief references from visible landing copy.
+- [x] Applied neutral public interface language across the client:
+  - Removed regional names, internal pilot labels, and location specific marketing copy from visible pages and metadata.
+  - Replaced the report wizard district list with neutral local area options.
+  - Removed the report wizard progress bar to keep the flow focused and calm.
+  - Added the neutral copy rule to all project context pillar files.
+- [x] Defined **Root Implementation Plan** in [`plan.md`](file:///workspaces/web/plan.md):
+  - 4-Phase zero-confusion product lifecycle.
+  - Multi-team quota allocation (e.g. max 3 teams per problem).
+  - Student pitch intake (1-para approach + 3-min video walkthrough + PPT slide deck).
+  - Government side-by-side pitch review and one-click winning team selection.
+  - Auto-generated active project and milestone workspace.
+- [x] Implemented Full **Expo Notion Minimal** Landing Page Journey:
+  - **LandingProof** ([`landing-proof.tsx`](file:///workspaces/web/client/components/landing/landing-proof.tsx)): Monospace telemetry metrics with hairline dividers (`100% Provenance`, `Max 3 Teams`, `PostGIS`, `Hybrid AI`).
+  - **LandingPipeline** ([`landing-pipeline.tsx`](file:///workspaces/web/client/components/landing/landing-pipeline.tsx)): 5-step numbered intelligence pipeline from citizen intake to verified field impact.
+  - **LandingBento** ([`landing-bento.tsx`](file:///workspaces/web/client/components/landing/landing-bento.tsx)): Asymmetric grid detailing Multi-Signal Fusion, Capability Matching, PostGIS Deterministic Geo, and Verified Solution Memory.
+  - **LandingRoles** ([`landing-roles.tsx`](file:///workspaces/web/client/components/landing/landing-roles.tsx)): 5 dedicated stakeholder entry points (Citizens, Government, Students/Researchers, Universities/Labs, Industry/Startups).
+  - **LandingProvenance** ([`landing-provenance.tsx`](file:///workspaces/web/client/components/landing/landing-provenance.tsx)): Institutional data provenance and validation guarantees.
+  - **LandingFaq** ([`landing-faq.tsx`](file:///workspaces/web/client/components/landing/landing-faq.tsx)): Clean interactive accordion addressing governance, quotas, and verification principles.
+  - **LandingFooter** ([`landing-footer.tsx`](file:///workspaces/web/client/components/landing/landing-footer.tsx)): Structured directory footer with accreditation notices.
 
-- [x] Implemented Multi-Role Authentication & Onboarding Pipeline:
-  - Configured Firebase Client SDK with live project credentials ([`client/lib/firebase/config.ts`](file:///workspaces/web/client/lib/firebase/config.ts), [`client/lib/firebase/auth-service.ts`](file:///workspaces/web/client/lib/firebase/auth-service.ts)).
-  - Built clean Minimalist Sign-in screen ([`client/app/(auth)/login/page.tsx`](file:///workspaces/web/client/app/(auth)/login/page.tsx)) focused purely on Email & Password.
-  - Built clean Minimalist Sign-up screen ([`client/app/(auth)/register/page.tsx`](file:///workspaces/web/client/app/(auth)/register/page.tsx)) with streamlined name and credential entry.
-  - Built Dynamic 3-Step Onboarding Wizard ([`client/app/(auth)/onboarding/page.tsx`](file:///workspaces/web/client/app/(auth)/onboarding/page.tsx)):
-    - **Step 1: Role Selection**: Choose from 5 ecosystem roles (Citizen, Student, Government, University/Lab, Industry).
-    - **Step 2: Dynamic Geographic Context**: Zero hardcoded locations, supporting automatic high-precision GPS detection via browser geolocation & OpenStreetMap reverse geocoding with manual state/district/PIN entry.
-    - **Step 3: Institutional Credentials**: Role-adaptive inputs (AISHE codes for Universities, Skill sets for Students, Ministry & Designation for Government Officers, CSR focus for Industry).
-  - Built Post-Login Dashboard ([`client/app/(dashboard)/dashboard/page.tsx`](file:///workspaces/web/client/app/(dashboard)/dashboard/page.tsx)) featuring real-time telemetry metrics, problem cluster feed, and stakeholder portal navigation.
-  - Verified full Next.js production compilation (`next build` exited with code 0 across all 8 routes).
-  - Pushed to branch `feat/multi-role-auth-onboarding` and opened Pull Request [#1](https://github.com/Fire-Red/sih2026/pull/1).
-
-## Next Deliverables
-- [ ] Implement Citizen Signal Submission multi-step wizard (`/report`).
-- [ ] Implement Government Problem Validation Console & Spatial Radar (`/validate`).
-- [ ] Connect Next.js Route Handlers to Neon PostgreSQL (PostGIS / Drizzle ORM).
-- [ ] Build FastAPI AI Problem Fusion backend services.
+## Current Sprint Deliverables
+- [x] Fixed the runtime Turbopack chunk loading failure by clearing the stale generated cache and verifying a clean development server serves all referenced JavaScript assets.
+- [x] Replaced the dashboard top navigation with a responsive motion sidebar:
+  - Persistent desktop rail with an animated expanded panel.
+  - Mobile drawer with scrim and close control.
+  - Role filtered workspace links, profile area, and sign out action.
+  - Keyboard toggle with `Ctrl+/` or `⌘+/` and reduced motion support.
+  - Kept the dashboard content area stable while the sidebar opens and closes.
+- [x] Simplified the user entry and workspace surfaces:
+  - Replaced split auth pages with focused centered forms.
+  - Reduced onboarding visual density and clarified the step sequence.
+  - Replaced fabricated dashboard metric panels with role aware next actions.
+  - Verified login, registration, onboarding, and dashboard routes return successfully from the local app.
+- [ ] Update Drizzle ORM Schema (`client/lib/db/schema.ts`) with `student_teams`, `problem_applications` (video + PPT support), and `active_projects`.
+- [ ] Push schema updates to live Neon PostgreSQL via `drizzle-kit push`.
+- [ ] Build All Problem Statements Directory (`/problems`) with live team quota indicator and application drawer.
+- [ ] Build Government Review & Winner Selection Console (`/government/manage`).
+- [ ] Build Selected Team Active Project Workspace (`/projects/[id]`).

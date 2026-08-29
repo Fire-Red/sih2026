@@ -1,46 +1,49 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function LandingNav() {
   return (
-    <header className="sticky top-0 z-50 w-full h-16 bg-background/90 backdrop-blur-md border-b border-border-soft">
-      <div className="max-w-5xl mx-auto h-full px-6 flex items-center justify-between">
-        {/* Minimal Wordmark */}
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-sans font-semibold text-sm">
-            C
+    <header className="fixed top-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
+      <div className="w-full max-w-4xl h-14 rounded-full bg-white/70 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] px-5 flex items-center justify-between pointer-events-auto transition-all">
+        {/* Brand */}
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="h-7 w-7 rounded-lg bg-primary text-white flex items-center justify-center font-semibold text-xs shadow-sm shadow-primary/30 group-hover:scale-105 transition-transform">
+            CP
           </div>
-          <span className="text-lg font-medium tracking-tight text-foreground">
+          <span className="text-sm font-semibold tracking-tight text-foreground">
             CivicPulse
           </span>
         </Link>
 
         {/* Center Links */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-normal text-muted-foreground">
-          <Link href="#how-it-works" className="hover:text-primary transition-colors">
-            How it works
+        <nav className="hidden md:flex items-center gap-7 text-xs font-medium text-muted-foreground">
+          <Link href="/problems" className="hover:text-foreground transition-colors">
+            Problems
           </Link>
-          <Link href="#portals" className="hover:text-primary transition-colors">
-            Portals
+          <Link href="/track" className="hover:text-foreground transition-colors">
+            Live Tracker
           </Link>
-          <Link href="#data-model" className="hover:text-primary transition-colors">
-            Data model
+          <Link href="/#pipeline" className="hover:text-foreground transition-colors">
+            Intelligence Engine
+          </Link>
+          <Link href="/#provenance" className="hover:text-foreground transition-colors">
+            Data Provenance
           </Link>
         </nav>
 
-        {/* Right CTA */}
-        <div className="flex items-center gap-3">
+        {/* Action Controls */}
+        <div className="flex items-center gap-2.5">
           <Link
             href="/login"
-            className="text-sm font-medium text-foreground hover:text-primary transition-colors px-2 py-1"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
           >
             Sign in
           </Link>
           <Link href="/report">
-            <Button className="h-9 px-4 rounded-full bg-primary text-primary-foreground hover:bg-[#003ecc] font-medium text-xs shadow-xs">
-              <span>Report an issue</span>
+            <Button size="sm" className="h-8 px-4 rounded-full bg-primary hover:bg-primary-deep text-white font-medium text-xs shadow-sm shadow-primary/25">
+              Report Issue
             </Button>
           </Link>
         </div>

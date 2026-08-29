@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { registerWithEmail } from "@/lib/firebase/auth-service";
-import { Eye, EyeOff, Lock, Mail, User, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -46,9 +46,9 @@ export function RegisterForm() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {error && (
-        <div className="p-3 text-xs rounded-xl bg-[#fff1f1] border border-[#cf202f]/20 text-[#cf202f]">
+        <div className="p-3 text-xs rounded-xl bg-destructive/8 border border-destructive/20 text-destructive">
           {error}
         </div>
       )}
@@ -58,16 +58,15 @@ export function RegisterForm() {
           <label className="text-xs font-medium text-foreground">
             Full name
           </label>
-          <div className="relative">
+          <div>
             <Input
               type="text"
               placeholder="Enter your name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               disabled={loading}
-              className="h-11 rounded-xl bg-background border-border-soft focus-visible:ring-primary pl-9 text-sm"
+              className="h-12 rounded-lg bg-background px-3 text-sm focus-visible:ring-primary"
             />
-            <User className="h-4 w-4 text-muted-foreground absolute left-3 top-3.5 pointer-events-none" />
           </div>
         </div>
 
@@ -75,16 +74,15 @@ export function RegisterForm() {
           <label className="text-xs font-medium text-foreground">
             Email address
           </label>
-          <div className="relative">
+          <div>
             <Input
               type="email"
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
-              className="h-11 rounded-xl bg-background border-border-soft focus-visible:ring-primary pl-9 text-sm"
+              className="h-12 rounded-lg bg-background px-3 text-sm focus-visible:ring-primary"
             />
-            <Mail className="h-4 w-4 text-muted-foreground absolute left-3 top-3.5 pointer-events-none" />
           </div>
         </div>
 
@@ -99,27 +97,29 @@ export function RegisterForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
-              className="h-11 rounded-xl bg-background border-border-soft focus-visible:ring-primary pl-9 pr-10 text-sm"
+              className="h-12 rounded-lg bg-background px-3 pr-10 text-sm focus-visible:ring-primary"
             />
-            <Lock className="h-4 w-4 text-muted-foreground absolute left-3 top-3.5 pointer-events-none" />
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-1 top-1 h-10 w-10 text-muted-foreground hover:text-foreground"
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
               ) : (
                 <Eye className="h-4 w-4" />
               )}
-            </button>
+            </Button>
           </div>
         </div>
 
         <Button
           type="submit"
           disabled={loading}
-          className="w-full h-11 rounded-full bg-primary hover:bg-[#003ecc] text-white font-medium text-sm transition-colors cursor-pointer mt-2"
+          className="mt-3 h-12 w-full rounded-lg"
         >
           {loading ? (
             <span className="flex items-center gap-2">
@@ -137,7 +137,7 @@ export function RegisterForm() {
           </span>
           <Link
             href="/login"
-            className="text-xs font-medium text-primary hover:text-[#003ecc] transition-colors"
+            className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
           >
             Sign in
           </Link>
