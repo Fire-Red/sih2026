@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     // Filter in-memory or refine with conditions
     let filtered = reports;
     if (district && district !== "all") {
-      filtered = filtered.filter((r) => r.district.toLowerCase() === district.toLowerCase());
+      filtered = filtered.filter((r) => r.district?.toLowerCase() === district.toLowerCase());
     }
     if (category && category !== "all") {
       filtered = filtered.filter((r) => r.category === category);
@@ -62,9 +62,9 @@ export async function POST(request: Request) {
       evidence = [],
     } = body;
 
-    if (!title || !description || !category || !district) {
+    if (!title || !description || !category) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields: title, description, category, district" },
+        { success: false, error: "Missing required fields: title, description, category" },
         { status: 400 }
       );
     }
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
         category,
         subcategory: subcategory || null,
         severity: severity || "medium",
-        affectedPopulationEstimate: affectedPopulationEstimate ? parseInt(affectedPopulationEstimate, 10) : 100,
+        affectedPopulationEstimate: affectedPopulationEstimate ? parseInt(affectedPopulationEstimate, 10) : null,
         state,
         district,
         blockOrPanchayat: blockOrPanchayat || null,

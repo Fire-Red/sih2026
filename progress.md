@@ -51,6 +51,10 @@
   - Added a citizen dashboard API route backed by the report and user tables.
   - Restored the stored role from the backend after login and added password reset handling.
 - [x] Removed the public landing navigation from workspace pages and added the shared sidebar frame to the report, activity, and problem surfaces.
+- [x] Enforced the authenticated workspace boundary:
+  - Protected workspace surfaces redirect signed-out visitors to login.
+  - Signed-in visitors attempting to open login or registration are redirected to the dashboard.
+  - Report intake now uses neutral, non-demo review language and accepts reports without a known district or affected-population estimate.
 - [x] Fixed the runtime Turbopack chunk loading failure by clearing the stale generated cache and verifying a clean development server serves all referenced JavaScript assets.
 - [x] Replaced the dashboard top navigation with a responsive motion sidebar:
   - Persistent desktop rail with an animated expanded panel.

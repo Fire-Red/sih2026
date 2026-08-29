@@ -139,7 +139,7 @@ export const problemReports = pgTable("problem_reports", {
   severity: reportSeverityEnum("severity").default("medium").notNull(),
   affectedPopulationEstimate: integer("affected_population_estimate").default(100),
   state: text("state").default("Jharkhand").notNull(),
-  district: text("district").notNull(),
+  district: text("district"),
   blockOrPanchayat: text("block_or_panchayat"),
   pinCode: text("pin_code"),
   latitude: text("latitude"),
@@ -178,4 +178,3 @@ export type ProblemReport = typeof problemReports.$inferSelect;
 export type NewProblemReport = typeof problemReports.$inferInsert;
 export type ProblemEvidence = typeof problemEvidence.$inferSelect;
 export type NewProblemEvidence = typeof problemEvidence.$inferInsert;
-

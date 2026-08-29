@@ -6,7 +6,6 @@ import { useUserStore } from "@/store/use-user-store";
 import {
   REPORT_CATEGORIES,
   LOCAL_DISTRICTS,
-  CategoryOption,
 } from "@/lib/constants/report-categories";
 import {
   Droplets,
@@ -18,12 +17,10 @@ import {
   Zap,
   Briefcase,
   MapPin,
-  Camera,
   CheckCircle2,
   AlertCircle,
   ArrowRight,
   ArrowLeft,
-  UploadCloud,
   Sparkles,
   Loader2,
   X,
