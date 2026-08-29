@@ -39,6 +39,12 @@
   - **LandingFooter** ([`landing-footer.tsx`](file:///workspaces/web/client/components/landing/landing-footer.tsx)): Structured directory footer with accreditation notices.
 
 ## Current Sprint Deliverables
+- [x] Initialized FastAPI AI Backend (`/server`) with `uv` virtual environment:
+  - Created `requirements.txt` with FastAPI, Uvicorn, LangChain, `langchain-mistralai`, Mistral SDK, `psycopg`, and `pgvector`.
+  - Implemented `RAGService` with `mistral-embed` (1024-dim) vector similarity search against Neon PostgreSQL pgvector and grounding context synthesis.
+  - Implemented `CivicAgent` using `ChatMistralAI` (`mistral-large-latest`) with tool binding (`search_similar_civic_problems`, `decompose_problem_capabilities`).
+  - Added REST endpoints (`/api/v1/rag/search`, `/api/v1/rag/ask`, `/api/v1/agent/chat`, `/health`).
+  - Created `.env` and `.env.example` templates for server settings.
 - [x] Built role specific citizen dashboard & profile settings (`/profile`, `/api/dashboard/citizen`).
 - [x] Enhanced report intake wizard with 4-step structured flow (issue, location, file/link evidence, review).
 - [x] Initialized Root `.gitignore` protecting secrets (`.env*`), Python virtual environments (`.venv`), node_modules, and build outputs.
@@ -56,6 +62,9 @@
   - Implemented `/problems` public directory with search, filtering, team quotas, and pitch drawer.
   - Fixed login flow to check persisted profile and redirect already onboarded users straight to `/dashboard`.
   - Fixed onboarding to prefill and preserve stored profile and geographic preferences.
+- [x] Created Pull Request & Merged main updates:
+  - Raised [PR #3](https://github.com/Fire-Red/sih2026/pull/3) on branch `feat/rag-agent-and-api-routes`.
+  - Resolved all merge conflicts cleanly and verified zero TypeScript errors.
 - [ ] Push schema updates to live Neon PostgreSQL via `drizzle-kit push`.
 - [ ] Build Government Review & Winner Selection Console (`/government/manage`).
 - [ ] Build Selected Team Active Project Workspace (`/projects/[id]`).
