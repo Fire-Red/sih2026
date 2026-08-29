@@ -10,6 +10,8 @@ export const metadata = {
 
 export default function CitizenReportPage() {
   return (
-    <WorkspaceFrame><CitizenReportWizard /></WorkspaceFrame>
+    <WorkspaceFrame>
+      <CitizenReportWizard />
+    </WorkspaceFrame>
   );
 }

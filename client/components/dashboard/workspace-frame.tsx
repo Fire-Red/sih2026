@@ -4,7 +4,7 @@ import { startTransition, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { getSession } from "@/lib/auth/session";
-import { UserSession } from "@/types/auth";
+import type { UserSession } from "@/types/auth";
 
 interface WorkspaceFrameProps {
   children: ReactNode;
@@ -22,10 +22,8 @@ export function WorkspaceFrame({ children }: WorkspaceFrameProps) {
       return;
     }
 
-    startTransition(() => {
-      setSession(currentSession);
-      setChecked(true);
-    });
+    setSession(currentSession);
+    setChecked(true);
   }, [router]);
 
   if (!checked || !session) return null;

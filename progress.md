@@ -39,40 +39,40 @@
   - **LandingFooter** ([`landing-footer.tsx`](file:///workspaces/web/client/components/landing/landing-footer.tsx)): Structured directory footer with accreditation notices.
 
 ## Current Sprint Deliverables
-- [x] Built the first role specific citizen dashboard:
-  - Focused report first workspace with responsive desktop and mobile layout.
-  - Personal report activity loaded through the authenticated report filter.
-  - Public recent signals kept separate from personal activity.
-  - Optional location context and clear report journey guidance.
-  - Reused semantic tokens, shadcn buttons, Lucide icons, and inline error states.
-- [x] Stabilized the shared workspace shell and account flow:
-  - Reserved the full desktop sidebar width so content does not overlap.
-  - Added a profile page and profile save flow for all supported user roles.
-  - Added a citizen dashboard API route backed by the report and user tables.
-  - Restored the stored role from the backend after login and added password reset handling.
-- [x] Removed the public landing navigation from workspace pages and added the shared sidebar frame to the report, activity, and problem surfaces.
-- [x] Enforced the authenticated workspace boundary:
-  - Protected workspace surfaces redirect signed-out visitors to login.
-  - Signed-in visitors attempting to open login or registration are redirected to the dashboard.
-  - Report intake now uses neutral, non-demo review language and accepts reports without a known district or affected-population estimate.
-- [x] Fixed the runtime Turbopack chunk loading failure by clearing the stale generated cache and verifying a clean development server serves all referenced JavaScript assets.
-- [x] Replaced the dashboard top navigation with a responsive motion sidebar:
-  - Persistent desktop rail with an animated expanded panel.
-  - Mobile drawer with scrim and close control.
-  - Role filtered workspace links, profile area, and sign out action.
-  - Keyboard toggle with `Ctrl+/` or `⌘+/` and reduced motion support.
-  - Kept the dashboard content area stable while the sidebar opens and closes.
-- [x] Simplified the user entry and workspace surfaces:
-  - Replaced split auth pages with focused centered forms.
-  - Reduced onboarding visual density and clarified the step sequence.
-  - Replaced fabricated dashboard metric panels with role aware next actions.
-  - Verified login, registration, onboarding, and dashboard routes return successfully from the local app.
+- [x] Initialized FastAPI AI Backend (`/server`) with `uv` virtual environment:
+  - Created `requirements.txt` with FastAPI, Uvicorn, LangChain, `langchain-mistralai`, Mistral SDK, `psycopg`, and `pgvector`.
+  - Implemented `RAGService` with `mistral-embed` (1024-dim) vector similarity search against Neon PostgreSQL pgvector and grounding context synthesis.
+  - Implemented `CivicAgent` using `ChatMistralAI` (`mistral-large-latest`) with tool binding (`search_similar_civic_problems`, `decompose_problem_capabilities`).
+  - Added REST endpoints (`/api/v1/rag/search`, `/api/v1/rag/ask`, `/api/v1/agent/chat`, `/health`).
+  - Created `.env` and `.env.example` templates for server settings.
+- [x] Built role specific citizen dashboard & profile settings (`/profile`, `/api/dashboard/citizen`).
+- [x] Enhanced report intake wizard with 4-step structured flow (issue, location, file/link evidence, review).
+- [x] Initialized Root `.gitignore` protecting secrets (`.env*`), Python virtual environments (`.venv`), node_modules, and build outputs.
+- [x] Updated Drizzle ORM Schema (`client/lib/db/schema.ts`) with `studentTeams`, `problemApplications` (video + PPT pitch support), and `activeProjects` (milestones & pilot tracking).
+- [x] Implemented Next.js API Routes:
+  - `GET /api/problems` & `POST /api/problems`: Category/district/status filtering and problem validation.
+  - `GET /api/teams` & `POST /api/teams`: Student team creation with member list and faculty mentor.
+  - `GET /api/applications` & `POST /api/applications`: Pitch submission with video/PPT URLs and quota enforcement.
+  - `GET /api/projects` & `POST /api/projects`: Active project generation with 4-phase milestone tracking and winner assignment.
+  - `POST /api/reports` & `GET /api/reports`: Citizen report registration and listing.
+  - `POST /api/users/profile` & `GET /api/users/profile`: Multi-role user profile persistence.
+  - `GET /api/dashboard/citizen`: Aggregated citizen problem report stats.
 - [x] Resolved authentication persistence and public routing:
   - Ensured public pages (`/`, `/login`, `/register`, `/problems`, `/track`) remain accessible without requiring login.
   - Implemented `/problems` public directory with search, filtering, team quotas, and pitch drawer.
   - Fixed login flow to check persisted profile and redirect already onboarded users straight to `/dashboard`.
   - Fixed onboarding to prefill and preserve stored profile and geographic preferences.
-- [ ] Update Drizzle ORM Schema (`client/lib/db/schema.ts`) with `student_teams`, `problem_applications` (video + PPT support), and `active_projects`.
-- [ ] Push schema updates to live Neon PostgreSQL via `drizzle-kit push`.
+- [x] Hardened API Routes, Database Transactions, and Server Safety:
+  - Wrapped quota validation, conditional db-side increments (`appliedTeamsCount`), and application inserts into atomic transactions in `/api/applications`.
+  - Added unique constraint composite on `problem_applications(problem_id, team_id)` and uniqueness on `active_projects(problem_id)`.
+  - Validated `maxTeamsAllowed` as a positive integer on `/api/problems`.
+  - Wrapped project creation and state transitions in an atomic transaction in `/api/projects`, enforcing `selectedTeamId IS NULL` condition and validating application ownership.
+  - Converted in-memory filter loops to direct SQL `where(and(...))` clauses across `applications` and `projects` routes.
+  - Integrated active session and profile `reporterId` linkage when citizens submit reports, and resolved reporter identifiers against the `users` table.
+  - Updated citizen report wizard step 2 with required district validation and safe functional state updating for attachments.
+  - Executed tool dispatch in `CivicAgent.run` and returned final LLM responses with `ToolMessage`.
+  - Improved `RAGService` with embedding try/catch boundaries, server-side error logging, generic user feedback, and calibrated similarity thresholding (`0.65`).
+  - Hardened CORS configuration with trusted origins and secure headers in `server/app/main.py`.
+  - Cleared duplicate date headers in `error-memory.md` and synchronous state dispatch in `workspace-frame.tsx`.
 - [ ] Build Government Review & Winner Selection Console (`/government/manage`).
 - [ ] Build Selected Team Active Project Workspace (`/projects/[id]`).

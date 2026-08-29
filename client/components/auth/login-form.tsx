@@ -24,6 +24,10 @@ export function LoginForm() {
     if (getSession()) router.replace("/dashboard");
   }, [router]);
 
+  useEffect(() => {
+    if (getSession()) router.replace("/dashboard");
+  }, [router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);

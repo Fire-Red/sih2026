@@ -69,11 +69,32 @@ export async function POST(request: Request) {
       );
     }
 
+    let resolvedReporterId: string | null = null;
+    if (reporterId) {
+      // Check if reporterId is a user UUID or a firebaseUid
+      const [matchedUser] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, reporterId));
+
+      if (matchedUser) {
+        resolvedReporterId = matchedUser.id;
+      } else {
+        const [firebaseUser] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.firebaseUid, reporterId));
+        if (firebaseUser) {
+          resolvedReporterId = firebaseUser.id;
+        }
+      }
+    }
+
     // Insert Report
     const [insertedReport] = await db
       .insert(problemReports)
       .values({
-        reporterId: reporterId || null,
+        reporterId: resolvedReporterId,
         title,
         description,
         category,
