@@ -31,6 +31,14 @@ interface ReportItem {
   createdAt: string;
 }
 
+interface DashboardResponse {
+  success?: boolean;
+  data?: {
+    reports: ReportItem[];
+    counts: { total: number; active: number; resolved: number };
+  };
+}
+
 const statusLabels: Record<string, string> = {
   submitted: "Submitted",
   under_review: "Under review",
@@ -58,10 +66,10 @@ export function CitizenDashboard({ session, profile }: CitizenDashboardProps) {
     let active = true;
     const loadReports = async () => {
       try {
-        const response = await fetch(`/api/reports?reporterId=${encodeURIComponent(session.id)}`);
-        const data = (await response.json()) as { success?: boolean; reports?: ReportItem[] };
-        if (active && data.success && data.reports) {
-          startTransition(() => setReports(data.reports ?? []));
+        const response = await fetch(`/api/dashboard/citizen?firebaseUid=${encodeURIComponent(session.id)}`);
+        const data = (await response.json()) as DashboardResponse;
+        if (active && data.success && data.data) {
+          startTransition(() => setReports(data.data?.reports ?? []));
         }
       } catch {
         if (active) startTransition(() => setReports([]));
@@ -106,7 +114,7 @@ export function CitizenDashboard({ session, profile }: CitizenDashboardProps) {
       </section>
 
       <section className="border-t border-border py-8">
-        <div className="flex items-end justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Recent signals</p><h2 className="mt-2 text-xl font-medium tracking-[-0.03em] text-foreground">Follow what has been reported</h2></div><Link href="/track" className="hidden items-center gap-1 text-xs font-medium text-primary sm:flex">Open tracker <ArrowRight className="h-3.5 w-3.5" /></Link></div>
+        <div className="flex items-end justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Your reports</p><h2 className="mt-2 text-xl font-medium tracking-[-0.03em] text-foreground">Follow what you have shared</h2></div><Link href="/track" className="hidden items-center gap-1 text-xs font-medium text-primary sm:flex">Open tracker <ArrowRight className="h-3.5 w-3.5" /></Link></div>
         {loading ? <div className="mt-5 rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">Loading recent reports...</div> : visibleReports.length === 0 ? <div className="mt-5 rounded-xl border border-dashed border-border bg-card p-8 text-center"><UsersRound className="mx-auto h-5 w-5 text-muted-foreground" /><p className="mt-3 text-sm font-medium text-foreground">No public reports are available yet.</p><p className="mt-1 text-xs text-muted-foreground">Your report can be the first clear signal.</p><Link href="/report" className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-primary">Create a report <ArrowRight className="h-3.5 w-3.5" /></Link></div> : <div className="mt-5 grid gap-3">{visibleReports.map((report) => <Link key={report.id} href={`/track?submitted=${report.id}`} className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Activity className="h-4 w-4" /></span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-foreground">{report.title}</span><span className="mt-1 block text-xs text-muted-foreground">{statusLabels[report.status] ?? "In review"} · {report.district}</span></span><span className="hidden text-xs text-muted-foreground sm:block">{report.endorsementCount} support</span><ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" /></Link>)}</div>}
       </section>
 

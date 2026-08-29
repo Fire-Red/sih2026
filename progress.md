@@ -45,6 +45,12 @@
   - Public recent signals kept separate from personal activity.
   - Optional location context and clear report journey guidance.
   - Reused semantic tokens, shadcn buttons, Lucide icons, and inline error states.
+- [x] Stabilized the shared workspace shell and account flow:
+  - Reserved the full desktop sidebar width so content does not overlap.
+  - Added a profile page and profile save flow for all supported user roles.
+  - Added a citizen dashboard API route backed by the report and user tables.
+  - Restored the stored role from the backend after login and added password reset handling.
+- [x] Removed the public landing navigation from workspace pages and added the shared sidebar frame to the report, activity, and problem surfaces.
 - [x] Fixed the runtime Turbopack chunk loading failure by clearing the stale generated cache and verifying a clean development server serves all referenced JavaScript assets.
 - [x] Replaced the dashboard top navigation with a responsive motion sidebar:
   - Persistent desktop rail with an animated expanded panel.

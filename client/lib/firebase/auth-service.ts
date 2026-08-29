@@ -5,11 +5,11 @@ import {
   signOut as firebaseSignOut,
   GoogleAuthProvider,
   signInWithPopup,
-  User as FirebaseUser,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "./config";
 import { setSession, clearSession, getSession } from "@/lib/auth/session";
-import { UserRole, UserSession } from "@/types/auth";
+import { UserSession } from "@/types/auth";
 
 export async function registerWithEmail(
   name: string,
@@ -97,4 +97,9 @@ export async function logout(): Promise<void> {
     await firebaseSignOut(auth);
   }
   clearSession();
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  if (!auth) throw new Error("Firebase auth is not initialized");
+  await sendPasswordResetEmail(auth, email);
 }

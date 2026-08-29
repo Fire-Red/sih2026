@@ -179,21 +179,6 @@ export function CitizenReportWizard() {
     }));
   };
 
-  // Preset sample photo helper
-  const handleAddSampleEvidence = (url: string, caption: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      evidence: [
-        ...prev.evidence,
-        {
-          mediaUrl: url,
-          caption,
-          mediaType: "image",
-        },
-      ],
-    }));
-  };
-
   // Submit Handler
   const handleSubmitReport = async () => {
     setIsSubmitting(true);
@@ -244,26 +229,26 @@ export function CitizenReportWizard() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-mono text-muted uppercase tracking-wider">
-            Citizen Challenge Submission • Step {currentStep} of 4
+            Report an issue • Step {currentStep} of 4
           </span>
           <span className="text-xs font-medium text-primary">
-            Community Problem Intake
+            Community report
           </span>
         </div>
 
         {/* Step Titles */}
         <div className="flex justify-between mt-3 text-xs text-muted font-medium">
           <span className={currentStep >= 1 ? "text-ink font-semibold" : ""}>
-            1. Problem Context
+            1. Issue
           </span>
           <span className={currentStep >= 2 ? "text-ink font-semibold" : ""}>
-            2. Geo & Impact
+            2. Location
           </span>
           <span className={currentStep >= 3 ? "text-ink font-semibold" : ""}>
-            3. Field Evidence
+            3. Evidence
           </span>
           <span className={currentStep >= 4 ? "text-ink font-semibold" : ""}>
-            4. AI Pre-Verification
+            4. Review
           </span>
         </div>
       </div>
@@ -283,8 +268,8 @@ export function CitizenReportWizard() {
               Select Problem Domain & Describe Issue
             </h2>
             <p className="text-sm text-body">
-              Choose the societal sector this issue belongs to so it can be routed
-              to the appropriate university department.
+              Describe what is happening. Your report will be reviewed and grouped
+              with related reports when appropriate.
             </p>
           </div>
 
@@ -341,7 +326,7 @@ export function CitizenReportWizard() {
           {/* Title */}
           <div>
             <label className="block text-xs font-medium text-ink mb-1.5 uppercase tracking-wide">
-              Problem Title *
+              Short title *
             </label>
             <input
               type="text"
@@ -357,7 +342,7 @@ export function CitizenReportWizard() {
           {/* Description */}
           <div>
             <label className="block text-xs font-medium text-ink mb-1.5 uppercase tracking-wide">
-              Detailed Description *
+              What is happening? *
             </label>
             <textarea
               rows={4}
@@ -439,7 +424,7 @@ export function CitizenReportWizard() {
               Geographic & Administrative Area
             </h2>
             <p className="text-sm text-body">
-              Add the location so the right local team can review the issue.
+              Add a location if you can. It helps reviewers understand the context.
             </p>
           </div>
 
@@ -483,7 +468,7 @@ export function CitizenReportWizard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-ink mb-1.5 uppercase tracking-wide">
-                District or local area *
+                District or local area
               </label>
               <select
                 value={formData.district}
@@ -492,6 +477,7 @@ export function CitizenReportWizard() {
                 }
                 className="w-full px-4 py-2.5 rounded-xl border border-hairline bg-surface-soft text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
+                <option value="">Select if known</option>
                 {LOCAL_DISTRICTS.map((dist) => (
                   <option key={dist} value={dist}>
                     {dist}
@@ -579,61 +565,15 @@ export function CitizenReportWizard() {
             </p>
           </div>
 
-          {/* Quick presets for common evidence */}
-          <div className="p-4 bg-surface-soft border border-hairline rounded-2xl space-y-3">
-            <div className="text-xs font-medium text-ink uppercase tracking-wide">
-              Sample Field Evidence Presets (Click to add):
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  handleAddSampleEvidence(
-                    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=600&q=80",
-                    "Discolored groundwater & broken pump fixture"
-                  )
-                }
-                className="px-3 py-1.5 bg-white border border-hairline rounded-full text-xs font-medium text-ink hover:border-primary transition-all flex items-center gap-1.5"
-              >
-                <Camera className="w-3 h-3 text-primary" /> Contaminated Tube-well
-                Photo
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  handleAddSampleEvidence(
-                    "https://images.unsplash.com/photo-1584483766114-2cea6facdf57?auto=format&fit=crop&w=600&q=80",
-                    "Water lab turbidity and fluoride test report"
-                  )
-                }
-                className="px-3 py-1.5 bg-white border border-hairline rounded-full text-xs font-medium text-ink hover:border-primary transition-all flex items-center gap-1.5"
-              >
-                <Camera className="w-3 h-3 text-emerald-600" /> Lab Test Certificate
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  handleAddSampleEvidence(
-                    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=600&q=80",
-                    "Damaged village culvert after monsoon erosion"
-                  )
-                }
-                className="px-3 py-1.5 bg-white border border-hairline rounded-full text-xs font-medium text-ink hover:border-primary transition-all flex items-center gap-1.5"
-              >
-                <Camera className="w-3 h-3 text-amber-600" /> Road Erosion Photo
-              </button>
-            </div>
-          </div>
-
-          {/* Custom Link / Media adder */}
+          {/* Custom media link adder */}
           <div className="border border-hairline rounded-2xl p-4 space-y-3">
             <div className="text-xs font-medium text-ink uppercase tracking-wide">
-              Add Photo / Document URL
+              Add a photo or document link
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <input
                 type="url"
-                placeholder="https://example.com/photo.jpg"
+                placeholder="Paste a link to a photo or document"
                 value={newEvidenceUrl}
                 onChange={(e) => setNewEvidenceUrl(e.target.value)}
                 className="sm:col-span-2 px-3.5 py-2 rounded-xl border border-hairline bg-surface-soft text-xs text-ink focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
@@ -653,7 +593,7 @@ export function CitizenReportWizard() {
                 disabled={!newEvidenceUrl}
                 className="px-4 py-1.5 bg-ink text-white rounded-full text-xs font-semibold hover:bg-black disabled:opacity-40"
               >
-                + Add Attachment
+                Add evidence
               </button>
             </div>
           </div>
@@ -704,7 +644,7 @@ export function CitizenReportWizard() {
             </div>
           ) : (
             <div className="text-center py-6 border border-dashed border-hairline rounded-2xl text-xs text-muted">
-              No evidence attached yet. (Evidence is optional but highly recommended)
+              Evidence is optional. You can add it later if you have a link.
             </div>
           )}
 
@@ -728,27 +668,27 @@ export function CitizenReportWizard() {
         </div>
       )}
 
-      {/* STEP 4: Review & AI Pre-Classification */}
+      {/* STEP 4: Review */}
       {currentStep === 4 && (
         <div className="bg-canvas border border-hairline rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm">
           <div>
             <h2 className="text-xl font-normal text-ink mb-1">
-              AI Triage & Verification Preview
+              Review your report
             </h2>
             <p className="text-sm text-body">
-              Our automated problem fusion model analyzes your report to cluster
-              it with related signals from the wider community.
+              Check the details before submitting. Related reports may be grouped
+              after review; your report remains part of the original record.
             </p>
           </div>
 
-          {/* AI Pre-Classification Card */}
+          {/* Review summary */}
           <div className="p-5 bg-primary/5 border border-primary/20 rounded-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wider">
-                <Sparkles className="w-4 h-4" /> AI Automated Routing Target
+                <CheckCircle2 className="w-4 h-4" /> Review summary
               </div>
               <span className="text-[11px] font-mono bg-white px-2.5 py-1 rounded-full border border-primary/20 text-primary">
-                98.4% Domain Confidence
+                Ready to submit
               </span>
             </div>
 
@@ -765,18 +705,10 @@ export function CitizenReportWizard() {
 
               <div className="bg-white p-3.5 rounded-xl border border-hairline">
                 <div className="text-muted text-[11px] uppercase mb-1">
-                  Suggested HEI Research Match
+                  Review path
                 </div>
                 <div className="text-ink font-semibold">
-                  {formData.category === "water_sanitation"
-                    ? "Water systems research team"
-                    : formData.category === "agriculture_irrigation"
-                    ? "Agriculture research team"
-                    : formData.category === "rural_infrastructure"
-                    ? "Infrastructure research team"
-                    : formData.category === "healthcare_nutrition"
-                    ? "Public health research team"
-                    : "Community research team"}
+                  Community and public-service review
                 </div>
               </div>
             </div>
@@ -831,7 +763,7 @@ export function CitizenReportWizard() {
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-4 h-4" /> Transmit Challenge to Pipeline
+                  <CheckCircle2 className="w-4 h-4" /> Submit report
                 </>
               )}
             </button>

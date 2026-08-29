@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { loginWithEmail } from "@/lib/firebase/auth-service";
+import { loginWithEmail, requestPasswordReset } from "@/lib/firebase/auth-service";
 import { useUserStore } from "@/store/use-user-store";
+import { setSession } from "@/lib/auth/session";
+import { getSession } from "@/lib/auth/session";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 export function LoginForm() {
@@ -16,6 +18,11 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState(false);
+
+  useEffect(() => {
+    if (getSession()) router.replace("/dashboard");
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +43,11 @@ export function LoginForm() {
         if (res.ok) {
           const data = await res.json();
           if (data.data?.isOnboarded) {
+            setSession({
+              ...userSession,
+              name: data.data.displayName || userSession.name,
+              role: data.data.role,
+            });
             const { setUser } = useUserStore.getState();
             setUser(data.data);
             router.push("/dashboard");
@@ -55,8 +67,27 @@ export function LoginForm() {
     }
   };
 
+  const handlePasswordReset = async () => {
+    if (!email) {
+      setError("Enter your email address first.");
+      return;
+    }
+    try {
+      await requestPasswordReset(email);
+      setResetSent(true);
+      setError(null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message.replace("Firebase: ", "") : "Unable to send reset email.");
+    }
+  };
+
   return (
     <div className="space-y-5">
+      {resetSent && (
+        <div className="rounded-xl border border-semantic-up/25 bg-semantic-up/5 p-3 text-xs text-semantic-up">
+          Check your email for a password reset link.
+        </div>
+      )}
       {error && (
         <div className="p-3 text-xs rounded-xl bg-destructive/8 border border-destructive/20 text-destructive">
           {error}
@@ -85,12 +116,13 @@ export function LoginForm() {
             <label className="text-xs font-medium text-foreground">
               Password
             </label>
-            <Link
-              href="#"
+            <button
+              type="button"
+              onClick={() => void handlePasswordReset()}
               className="text-xs text-primary hover:text-primary/80 transition-colors"
             >
               Forgot password?
-            </Link>
+            </button>
           </div>
           <div className="relative">
             <Input

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
-import { LandingNav } from "@/components/landing/landing-nav";
+import { WorkspaceFrame } from "@/components/dashboard/workspace-frame";
 import { ProblemCard, Problem } from "@/components/problems/problem-card";
 import { ApplicationDrawer } from "@/components/problems/application-drawer";
 import { LOCAL_DISTRICTS } from "@/lib/constants/report-categories";
@@ -81,9 +80,8 @@ export default function ProblemsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary/15 selection:text-primary">
-      <LandingNav />
-      <main className="max-w-5xl mx-auto px-4 pt-28 pb-16">
+    <WorkspaceFrame>
+      <div className="mx-auto max-w-5xl px-4 pb-16 text-foreground sm:px-0">
         <header className="border-b border-border pb-8">
           <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-primary mb-2">
             <Layers3 className="h-4 w-4" /> Open Problem Statements
@@ -161,7 +159,7 @@ export default function ProblemsPage() {
           problem={activeProblem}
           onClose={() => setActiveProblem(null)}
         />
-      </main>
-    </div>
+      </div>
+    </WorkspaceFrame>
   );
 }

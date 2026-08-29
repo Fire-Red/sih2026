@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import { CitizenReportTracker } from "@/components/reports/citizen-report-tracker";
-import { LandingNav } from "@/components/landing/landing-nav";
+import { WorkspaceFrame } from "@/components/dashboard/workspace-frame";
 import { Loader2 } from "lucide-react";
 
 export const metadata = {
@@ -11,9 +11,7 @@ export const metadata = {
 
 export default function TrackPage() {
   return (
-    <div className="min-h-screen bg-surface-soft flex flex-col">
-      <LandingNav />
-      <main className="flex-1">
+    <WorkspaceFrame>
         <Suspense
           fallback={
             <div className="py-20 flex justify-center items-center">
@@ -23,7 +21,6 @@ export default function TrackPage() {
         >
           <CitizenReportTracker />
         </Suspense>
-      </main>
-    </div>
+    </WorkspaceFrame>
   );
 }

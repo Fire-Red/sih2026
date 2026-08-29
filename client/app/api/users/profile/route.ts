@@ -220,6 +220,7 @@ export async function POST(req: NextRequest) {
       success: true,
       message: "User profile persisted successfully",
       userId,
+      data: { ...body, id: userId },
     });
   } catch (error: unknown) {
     const message =
