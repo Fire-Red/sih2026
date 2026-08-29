@@ -1,271 +1,86 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Building2,
-  Calendar,
-  ChevronRight,
-  Circle,
-  MapPin,
-  Play,
-  Users,
-} from "lucide-react";
-import { MilestoneCard, Milestone } from "./milestone-card";
+import { AlertCircle, ArrowLeft, Building2, Calendar, CheckCircle2, Circle, MapPin, Play, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-interface Problem {
-  title: string;
-  district: string;
-  category: string;
-}
-
-interface Project {
-  id: string;
-  title: string;
-  status: "active" | "prototype" | "pilot" | "completed" | "blocked";
-  teamName: string;
-  institutionName: string;
-  district: string;
-  startDate: string;
-  pitchSummary: string;
-  videoUrl: string;
-  pilotDistrict?: string;
-  pilotDescription?: string;
-  problem: Problem;
-  milestones: Milestone[];
-}
-
-const STATUS_CLASSES: Record<Project["status"], string> = {
-  active: "bg-primary/10 text-primary",
-  prototype: "bg-accent text-accent-foreground",
-  pilot: "bg-semantic-up/10 text-semantic-up",
-  completed: "bg-muted text-muted-foreground",
-  blocked: "bg-destructive/10 text-destructive",
-};
-
-function ProjectStatusBadge({ status }: { status: Project["status"] }) {
-  return (
-    <span
-      className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${STATUS_CLASSES[status]}`}
-    >
-      {status}
-    </span>
-  );
-}
-
-function formatStartDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-const MOCK_PROJECT: Project = {
-  id: "1",
-  title: "Groundwater remediation and solar filtration system",
-  status: "active",
-  teamName: "Team Hydra",
-  institutionName: "Applied engineering institute",
-  district: "Central district",
-  startDate: "2026-09-01",
-  pitchSummary:
-    "We will deploy a solar-powered multi-stage filtration unit at 4 identified bore wells, with IoT sensors transmitting real-time water quality data to a government dashboard.",
-  videoUrl: "#",
-  pilotDistrict: "Central district",
-  pilotDescription: "The first pilot targets two bore wells in the selected area.",
-  problem: {
-    title: "Groundwater contamination in an industrial belt",
-    district: "Central district",
-    category: "Water & Sanitation",
-  },
-  milestones: [
-    {
-      id: "m1",
-      title: "Site survey and water quality baseline measurement",
-      dueDate: "2026-09-15",
-      status: "completed",
-      notes: "Completed. Data uploaded to shared drive.",
-    },
-    {
-      id: "m2",
-      title: "Filtration unit procurement and testing",
-      dueDate: "2026-10-30",
-      status: "in_progress",
-      notes: "Unit received from vendor. Lab tests underway.",
-    },
-    {
-      id: "m3",
-      title: "First bore well installation (Topchanchi)",
-      dueDate: "2026-11-30",
-      status: "pending",
-    },
-    {
-      id: "m4",
-      title: "IoT sensor deployment and dashboard integration",
-      dueDate: "2026-12-31",
-      status: "pending",
-    },
-    {
-      id: "m5",
-      title: "Pilot monitoring period (30 days)",
-      dueDate: "2027-01-31",
-      status: "pending",
-    },
-    {
-      id: "m6",
-      title: "Impact measurement and government verification",
-      dueDate: "2027-03-15",
-      status: "pending",
-    },
-  ],
-};
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getProjectDetail } from "@/lib/api/project-api";
+import type { ProjectDetail, ProjectMilestone } from "@/types/project-detail";
 
 interface ProjectWorkspaceProps {
   projectId: string;
 }
 
-export function ProjectWorkspace({ projectId: _projectId }: ProjectWorkspaceProps) {
-  const project = MOCK_PROJECT;
-  const completedCount = project.milestones.filter(
-    (m) => m.status === "completed"
-  ).length;
-  const totalCount = project.milestones.length;
-  const pilotStarted = Boolean(project.pilotDistrict);
-  const truncatedTitle =
-    project.title.length > 48
-      ? project.title.slice(0, 48) + "…"
-      : project.title;
+function formatDate(value: string | null): string {
+  if (!value) return "Not scheduled";
+  return new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value));
+}
 
+function statusLabel(status: ProjectDetail["project"]["status"]): string {
+  return status.replace("_", " ");
+}
+
+function MilestoneRow({ milestone }: { milestone: ProjectMilestone }) {
+  const completed = milestone.status === "completed";
+  const active = milestone.status === "in_progress";
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 h-14 bg-background border-b border-border flex items-center px-6">
-        <Link
-          href="/"
-          className="flex items-center gap-1.5 text-sm font-medium text-foreground"
-        >
-          <Circle className="h-2 w-2 fill-primary text-primary" />
-          CivicPulse
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground mx-2" />
-        <Link
-          href="/problems"
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Problems
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground mx-2" />
-        <span className="text-xs text-foreground">{truncatedTitle}</span>
-        <div className="ml-auto">
-          <ProjectStatusBadge status={project.status} />
+    <li className={`flex gap-4 rounded-lg border bg-card p-4 ${active ? "border-primary/40" : milestone.status === "overdue" ? "border-destructive/40" : "border-border"}`}>
+      <span className="mt-0.5 shrink-0" aria-hidden="true">
+        {completed ? <CheckCircle2 className="h-4 w-4 text-semantic-up" /> : <Circle className={`h-4 w-4 ${active ? "text-primary" : "text-muted-foreground"}`} />}
+      </span>
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <p className={`text-sm font-medium ${completed ? "text-muted-foreground line-through" : "text-foreground"}`}>{milestone.title}</p>
+          <time dateTime={milestone.dueDate || undefined} className="shrink-0 text-xs text-muted-foreground">{formatDate(milestone.dueDate)}</time>
         </div>
-      </header>
+        {milestone.notes && <p className="text-sm leading-6 text-muted-foreground">{milestone.notes}</p>}
+      </div>
+    </li>
+  );
+}
 
-      <main className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-light tracking-[-0.03em] text-foreground">
-            {project.title}
-          </h1>
-          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5" />
-              {project.teamName}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5" />
-              {project.institutionName}
-            </span>
-            <span className="flex items-center gap-1.5 tnum">
-              <Calendar className="h-3.5 w-3.5" />
-              Started {formatStartDate(project.startDate)}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5" />
-              {project.district}
-            </span>
-          </div>
-        </div>
+function WorkspaceHeader({ detail }: { detail: ProjectDetail }) {
+  return (
+    <header className="space-y-5 border-b border-border pb-7">
+      <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to overview</Link>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-3"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Active project</p><h1 className="max-w-3xl text-3xl font-medium leading-tight tracking-[-0.04em] text-foreground sm:text-4xl">{detail.project.title}</h1><p className="max-w-3xl text-base leading-7 text-muted-foreground">{detail.project.description || "No project description has been recorded."}</p></div>
+        <span className="w-fit rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium capitalize text-primary">{statusLabel(detail.project.status)}</span>
+      </div>
+      <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm text-muted-foreground"><span className="inline-flex items-center gap-1.5"><Building2 className="h-4 w-4" aria-hidden="true" />{detail.team.teamName}, {detail.team.institutionName}</span><span className="inline-flex items-center gap-1.5"><Calendar className="h-4 w-4" aria-hidden="true" />Started {formatDate(detail.project.startDate)}</span>{detail.problem.district && <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden="true" />{detail.problem.district}</span>}</div>
+    </header>
+  );
+}
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-3">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-medium text-foreground">
-                Milestones
-              </h2>
-              <span className="text-xs text-muted-foreground tnum">
-                {completedCount} of {totalCount} complete
-              </span>
-            </div>
-            {project.milestones.map((m) => (
-              <MilestoneCard key={m.id} milestone={m} />
-            ))}
-          </div>
+export function ProjectWorkspace({ projectId }: ProjectWorkspaceProps) {
+  const [detail, setDetail] = useState<ProjectDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-          <div className="space-y-4">
-            <div className="bg-card border border-border rounded-xl p-5">
-              <h3 className="text-xs font-medium text-muted-foreground mb-3">
-                Source problem
-              </h3>
-              <p className="text-sm font-medium text-foreground">
-                {project.problem.title}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {project.problem.district} · {project.problem.category}
-              </p>
-              <Link
-                href="/problems"
-                className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:opacity-80 transition-opacity"
-              >
-                View problem <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
+  const loadProject = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try { setDetail(await getProjectDetail(projectId)); } catch (requestError: unknown) { setError(requestError instanceof Error ? requestError.message : "Unable to load this project."); } finally { setLoading(false); }
+  }, [projectId]);
 
-            <div className="bg-card border border-border rounded-xl p-5">
-              <h3 className="text-xs font-medium text-muted-foreground mb-3">
-                Selected application
-              </h3>
-              <p className="text-sm font-medium text-foreground">
-                {project.teamName}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
-                {project.pitchSummary}
-              </p>
-              <a
-                href={project.videoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:opacity-80 transition-opacity"
-              >
-                <Play className="h-3 w-3" />
-                Watch pitch video
-              </a>
-            </div>
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadProject(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadProject]);
 
-            <div className="bg-card border border-border rounded-xl p-5">
-              <h3 className="text-xs font-medium text-muted-foreground mb-3">
-                Pilot deployment
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {project.pilotDistrict ?? "Not started"}
-              </p>
-              {project.pilotDescription && (
-                <p className="text-sm text-foreground mt-2 font-light">
-                  {project.pilotDescription}
-                </p>
-              )}
-              {!pilotStarted && (
-                <Button
-                  variant="outline"
-                  className="mt-4 w-full h-9 rounded-full text-xs"
-                >
-                  Record pilot start
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
+  if (loading) return <main className="mx-auto max-w-5xl px-4 py-12 sm:px-8 lg:px-12"><div role="status" className="rounded-lg border border-border bg-card p-8 text-base text-muted-foreground">Loading project workspace…</div></main>;
+  if (error || !detail) return <main className="mx-auto max-w-2xl px-4 py-12 sm:px-8"><Card><CardContent className="space-y-4 p-8"><AlertCircle className="h-6 w-6 text-destructive" aria-hidden="true" /><h1 className="text-2xl font-medium tracking-[-0.03em]">Project unavailable</h1><p className="text-base leading-7 text-muted-foreground">{error || "This project could not be found."}</p><Button type="button" variant="outline" onClick={() => void loadProject()}><RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />Try again</Button></CardContent></Card></main>;
+
+  const milestones = detail.project.milestones || [];
+  const completedCount = milestones.filter((milestone) => milestone.status === "completed").length;
+  return (
+    <main id="main-content" className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 sm:px-8 lg:px-12 lg:py-12">
+      <WorkspaceHeader detail={detail} />
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <section aria-labelledby="milestones-title" className="min-w-0 space-y-4"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 id="milestones-title" className="text-xl font-medium tracking-[-0.03em]">Milestones</h2><p className="mt-1 text-base text-muted-foreground">The delivery plan recorded when this project was created.</p></div><span className="font-mono text-xs text-muted-foreground">{completedCount} of {milestones.length} complete</span></div>{milestones.length === 0 ? <Card><CardContent className="p-8 text-base text-muted-foreground">No milestones have been recorded yet.</CardContent></Card> : <ol className="space-y-3">{milestones.map((milestone) => <MilestoneRow key={milestone.id} milestone={milestone} />)}</ol>}</section>
+        <aside className="space-y-4"><Card><CardHeader className="p-5"><CardTitle className="text-sm font-medium">Source problem</CardTitle></CardHeader><CardContent className="space-y-3 p-5 pt-0"><p className="text-sm font-medium text-foreground">{detail.problem.title}</p><p className="text-sm text-muted-foreground">{detail.problem.category.replaceAll("_", " ")}{detail.problem.district ? `, ${detail.problem.district}` : ""}</p><Link href={`/problems?problemId=${detail.problem.id}`} className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">View problem <ArrowLeft className="h-4 w-4 rotate-180" aria-hidden="true" /></Link></CardContent></Card><Card><CardHeader className="p-5"><CardTitle className="text-sm font-medium">Selected team</CardTitle></CardHeader><CardContent className="space-y-3 p-5 pt-0"><p className="text-sm font-medium text-foreground">{detail.team.teamName}</p><p className="text-sm text-muted-foreground">{detail.team.institutionName}</p>{detail.application?.pitchSummary && <p className="text-sm leading-6 text-muted-foreground">{detail.application.pitchSummary}</p>}{detail.application?.videoUrl && <a href={detail.application.videoUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Play className="h-4 w-4" aria-hidden="true" />Watch pitch</a>}</CardContent></Card><Card><CardHeader className="p-5"><CardTitle className="text-sm font-medium">Pilot evidence</CardTitle></CardHeader><CardContent className="p-5 pt-0"><p className="text-sm leading-6 text-muted-foreground">{detail.project.pilotEvidence?.length ? `${detail.project.pilotEvidence.length} evidence items recorded.` : "No pilot evidence has been recorded yet."}</p></CardContent></Card></aside>
+      </div>
+    </main>
   );
 }

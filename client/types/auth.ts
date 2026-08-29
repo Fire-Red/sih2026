@@ -3,7 +3,6 @@ export type UserRole =
   | "student"
   | "government"
   | "institution"
-  | "industry"
   | "admin";
 
 export interface GeoLocationContext {

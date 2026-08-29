@@ -24,7 +24,7 @@ const portals = [
     title: "Government",
     description:
       "Review clustered problem candidates, approve problem profiles, set team quotas, and select winning teams.",
-    href: "/validate",
+    href: "/government/manage",
     cta: "Open console",
     featured: false,
   },
@@ -42,17 +42,8 @@ const portals = [
     title: "Universities and labs",
     description:
       "Register verified faculty and laboratory capabilities, collaborate in consortia, and sponsor challenges.",
-    href: "/login",
+    href: "/problems",
     cta: "Institution portal",
-    featured: false,
-  },
-  {
-    icon: Briefcase,
-    title: "Industry and startups",
-    description:
-      "Co-fund initiatives, deploy existing technology components, and scale verified prototypes across districts.",
-    href: "/login",
-    cta: "Partner portal",
     featured: false,
   },
 ];

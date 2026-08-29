@@ -10,10 +10,10 @@ import {
 import { eq } from "drizzle-orm";
 import {
   UserProfile,
+  UserRole,
   GovernmentProfileData,
   StudentProfileData,
   InstitutionProfileData,
-  IndustryProfileData,
 } from "@/types/auth";
 
 export async function POST(req: NextRequest) {
@@ -180,39 +180,6 @@ export async function POST(req: NextRequest) {
             accreditationStatus: instData.accreditationStatus || null,
           });
         }
-      } else if (body.role === "industry") {
-        const indData = body.roleProfile as IndustryProfileData;
-        const [existingInd] = await db
-          .select()
-          .from(industryProfiles)
-          .where(eq(industryProfiles.userId, userId));
-
-        if (existingInd) {
-          await db
-            .update(industryProfiles)
-            .set({
-              organizationName: indData.organizationName,
-              organizationType: indData.organizationType || null,
-              sector: indData.sector || null,
-              website: indData.website || null,
-              csrFocus: indData.csrFocus || null,
-              contactPersonDesignation:
-                indData.contactPersonDesignation || null,
-              updatedAt: new Date(),
-            })
-            .where(eq(industryProfiles.id, existingInd.id));
-        } else {
-          await db.insert(industryProfiles).values({
-            userId,
-            organizationName: indData.organizationName,
-            organizationType: indData.organizationType || null,
-            sector: indData.sector || null,
-            website: indData.website || null,
-            csrFocus: indData.csrFocus || null,
-            contactPersonDesignation:
-              indData.contactPersonDesignation || null,
-          });
-        }
       }
     }
 
@@ -277,12 +244,6 @@ export async function GET(req: NextRequest) {
         .from(institutionProfiles)
         .where(eq(institutionProfiles.userId, userRecord.id));
       roleProfile = p || null;
-    } else if (userRecord.role === "industry") {
-      const [p] = await db
-        .select()
-        .from(industryProfiles)
-        .where(eq(industryProfiles.userId, userRecord.id));
-      roleProfile = p || null;
     }
 
     const payload: UserProfile = {
@@ -290,7 +251,7 @@ export async function GET(req: NextRequest) {
       firebaseUid: userRecord.firebaseUid,
       email: userRecord.email,
       displayName: userRecord.displayName,
-      role: userRecord.role,
+      role: (userRecord.role === "industry" ? "citizen" : userRecord.role) as UserRole,
       avatarUrl: userRecord.avatarUrl,
       phone: userRecord.phone,
       isOnboarded: userRecord.isOnboarded,
