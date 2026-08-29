@@ -39,6 +39,22 @@
   - **LandingFooter** ([`landing-footer.tsx`](file:///workspaces/web/client/components/landing/landing-footer.tsx)): Structured directory footer with accreditation notices.
 
 ## Current Sprint Deliverables
+- [x] Built the first role specific citizen dashboard:
+  - Focused report first workspace with responsive desktop and mobile layout.
+  - Personal report activity loaded through the authenticated report filter.
+  - Public recent signals kept separate from personal activity.
+  - Optional location context and clear report journey guidance.
+  - Reused semantic tokens, shadcn buttons, Lucide icons, and inline error states.
+- [x] Stabilized the shared workspace shell and account flow:
+  - Reserved the full desktop sidebar width so content does not overlap.
+  - Added a profile page and profile save flow for all supported user roles.
+  - Added a citizen dashboard API route backed by the report and user tables.
+  - Restored the stored role from the backend after login and added password reset handling.
+- [x] Removed the public landing navigation from workspace pages and added the shared sidebar frame to the report, activity, and problem surfaces.
+- [x] Enforced the authenticated workspace boundary:
+  - Protected workspace surfaces redirect signed-out visitors to login.
+  - Signed-in visitors attempting to open login or registration are redirected to the dashboard.
+  - Report intake now uses neutral, non-demo review language and accepts reports without a known district or affected-population estimate.
 - [x] Fixed the runtime Turbopack chunk loading failure by clearing the stale generated cache and verifying a clean development server serves all referenced JavaScript assets.
 - [x] Replaced the dashboard top navigation with a responsive motion sidebar:
   - Persistent desktop rail with an animated expanded panel.
@@ -51,8 +67,12 @@
   - Reduced onboarding visual density and clarified the step sequence.
   - Replaced fabricated dashboard metric panels with role aware next actions.
   - Verified login, registration, onboarding, and dashboard routes return successfully from the local app.
+- [x] Resolved authentication persistence and public routing:
+  - Ensured public pages (`/`, `/login`, `/register`, `/problems`, `/track`) remain accessible without requiring login.
+  - Implemented `/problems` public directory with search, filtering, team quotas, and pitch drawer.
+  - Fixed login flow to check persisted profile and redirect already onboarded users straight to `/dashboard`.
+  - Fixed onboarding to prefill and preserve stored profile and geographic preferences.
 - [ ] Update Drizzle ORM Schema (`client/lib/db/schema.ts`) with `student_teams`, `problem_applications` (video + PPT support), and `active_projects`.
 - [ ] Push schema updates to live Neon PostgreSQL via `drizzle-kit push`.
-- [ ] Build All Problem Statements Directory (`/problems`) with live team quota indicator and application drawer.
 - [ ] Build Government Review & Winner Selection Console (`/government/manage`).
 - [ ] Build Selected Team Active Project Workspace (`/projects/[id]`).

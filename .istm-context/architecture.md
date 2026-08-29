@@ -841,6 +841,30 @@ Use Zustand for client side state (UI state, active filters, map viewport, curre
 
 ---
 
+# Product Intelligence Decisions
+
+## Flexible problem reports
+
+The report model supports any community or institutional problem, not only physical infrastructure. Category, severity, location, affected population, and impact details are nullable where they do not apply. Evidence is optional. Media is stored through the approved media provider and retains its provenance.
+
+## Fusion and repeated reports
+
+The system compares reports using semantic similarity, compatible problem type, geographic distance when available, temporal context, and evidence. It classifies relationships as exact duplicate, same systemic problem, related but separate, or unrelated.
+
+Repeated reports close to one another can form a systemic problem when the underlying issue is also compatible. A count such as 19 reports is evidence of repeated occurrence, not proof of 19 unique households or a numeric affected population. Government validation is required before a consequential grouping is treated as confirmed.
+
+## Solution memory retrieval
+
+After a systemic problem is created or reviewed, RAG retrieves relevant prior solutions from solution memory. Retrieval considers problem meaning, type, symptoms, causes, required capabilities, location context, constraints, and verified results. Results show their source, verification status, evidence, limitations, and measured outcomes when available.
+
+Student applications may reference prior solutions. The application records what the team is reusing, what it is changing, why the approach fits, and what limitations remain. Government and institution reviewers can inspect these references beside the team proposal.
+
+## AI assistance and authority
+
+Government officers, institutions, and students may use AI for explanation, summarization, relationship review, solution search, capability discovery, and proposal drafting. AI never approves a problem, merges a consequential report group, selects a team, verifies a capability, or claims impact. Every AI result is labelled as an assisted draft and grounded in available sources and records.
+
+---
+
 # Data Fetching and Caching
 
 Use TanStack Query (React Query) via custom hooks per domain:

@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, FileText, Layers3, MapPin, UserRound } from "lucide-react";
+import { ArrowRight, FileText, Layers3, MapPin } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { useUserStore } from "@/store/use-user-store";
 import { UserRole, UserSession } from "@/types/auth";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { Button } from "@/components/ui/button";
+import { CitizenDashboard } from "@/components/dashboard/citizen-dashboard";
 
 interface RoleContent {
   label: string;
@@ -46,12 +47,25 @@ export default function DashboardPage() {
       router.push("/login");
       return;
     }
-    setSession(currentSession);
-    setLoading(false);
+    startTransition(() => {
+      setSession(currentSession);
+      setLoading(false);
+    });
   }, [router]);
 
   if (loading || !session) {
     return <div className="min-h-screen bg-background" aria-label="Loading workspace" />;
+  }
+
+  if (session.role === "citizen") {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardSidebar session={session} />
+        <main className="min-h-screen px-4 py-8 sm:px-8 lg:pl-72 lg:pr-12 lg:py-12">
+          <CitizenDashboard session={session} profile={userProfile} />
+        </main>
+      </div>
+    );
   }
 
   const content = roleContent[session.role];
@@ -61,7 +75,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <DashboardSidebar session={session} />
-      <main className="min-h-screen px-4 py-8 sm:px-8 lg:pl-28 lg:pr-12 lg:py-12">
+      <main className="min-h-screen px-4 py-8 sm:px-8 lg:pl-72 lg:pr-12 lg:py-12">
         <div className="mx-auto max-w-5xl">
           <header className="flex flex-col gap-6 border-b border-border pb-8 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -94,9 +108,9 @@ export default function DashboardPage() {
                 <span className="flex-1 text-sm font-medium text-foreground">Browse problem records</span>
                 <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
               </Link>
-              <Link href={session.role === "citizen" ? "/track" : "/report"} className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground">{session.role === "citizen" ? <UserRound className="h-4 w-4" /> : <FileText className="h-4 w-4" />}</span>
-                <span className="flex-1 text-sm font-medium text-foreground">{session.role === "citizen" ? "Track your reports" : "Share a problem"}</span>
+              <Link href="/report" className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-foreground"><FileText className="h-4 w-4" /></span>
+                <span className="flex-1 text-sm font-medium text-foreground">Share a problem</span>
                 <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
               </Link>
             </div>
