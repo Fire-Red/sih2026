@@ -26,7 +26,7 @@ export function LandingDNAShowcase() {
                 EVENT TELEMETRY · #JH-2026-084
               </span>
               <h3 className="text-2xl font-medium text-foreground mt-1">
-                Dumka Sub-basin Water Infrastructure & Arsenic Anomaly
+                Sub basin water infrastructure and contamination anomaly
               </h3>
             </div>
             <span className="px-4 py-1.5 rounded-full bg-[#defbe6] text-semantic-up text-xs font-mono font-medium">
@@ -102,7 +102,7 @@ export function LandingDNAShowcase() {
               <div className="space-y-3">
                 <div className="p-4 rounded-2xl bg-surface-soft border border-border-soft flex items-center justify-between text-xs">
                   <div>
-                    <span className="font-medium text-foreground text-sm block">BIT Mesra</span>
+                    <span className="font-medium text-foreground text-sm block">Regional water lab</span>
                     <span className="text-muted-foreground font-mono text-[11px]">Hydraulic Modeling Lab</span>
                   </div>
                   <span className="px-3 py-1 rounded-full bg-primary/10 text-primary font-mono font-medium">
@@ -112,7 +112,7 @@ export function LandingDNAShowcase() {
 
                 <div className="p-4 rounded-2xl bg-surface-soft border border-border-soft flex items-center justify-between text-xs">
                   <div>
-                    <span className="font-medium text-foreground text-sm block">IIT ISM Dhanbad</span>
+                    <span className="font-medium text-foreground text-sm block">Applied sensing lab</span>
                     <span className="text-muted-foreground font-mono text-[11px]">Applied Geochemistry & IoT Sensing</span>
                   </div>
                   <span className="px-3 py-1 rounded-full bg-primary/10 text-primary font-mono font-medium">

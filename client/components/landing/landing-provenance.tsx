@@ -1,70 +1,82 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Database, MapPin, UserCheck, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+const guarantees = [
+  {
+    icon: Database,
+    title: "Official institutional directories",
+    description:
+      "University capabilities are sourced from accredited higher education directories and verified department pages. No fabricated records.",
+  },
+  {
+    icon: MapPin,
+    title: "Geospatial calculations",
+    description:
+      "Distance and clustering run deterministically using PostGIS spatial functions. The system never uses AI to estimate geographic proximity.",
+  },
+  {
+    icon: UserCheck,
+    title: "Human validation gate",
+    description:
+      "Problem profiles and challenge commissionings require explicit review and approval by authorized government officers before any action.",
+  },
+];
 
 export function LandingProvenance() {
   return (
-    <section id="data-model" className="py-20 bg-surface-soft px-6 border-b border-border-soft">
+    <section id="data-model" className="py-20 bg-muted px-6 border-b border-border">
       <div className="max-w-5xl mx-auto">
         <div className="max-w-xl mb-12">
-          <h2 className="text-3xl sm:text-4xl font-normal tracking-[-0.03em] text-foreground">
-            Data integrity & provenance
+          <h2 className="text-3xl sm:text-[32px] font-light tracking-[-0.03em] text-foreground">
+            Data integrity and provenance
           </h2>
-          <p className="mt-3 text-base text-muted-foreground leading-relaxed">
-            Every record in the system tracks its origin, verification date, and status.
+          <p className="mt-3 text-base text-muted-foreground font-light leading-relaxed">
+            Every record in the system tracks its origin, verification date, and current status.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-2xl bg-card border border-border-soft">
-            <h3 className="text-base font-medium text-foreground">
-              Official institutional directories
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              University capabilities are sourced from accredited higher education directories and verified department pages.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-card border border-border-soft">
-            <h3 className="text-base font-medium text-foreground">
-              Geospatial calculations
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              Distance and clustering computations run deterministically using PostGIS spatial functions rather than opaque estimates.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-card border border-border-soft">
-            <h3 className="text-base font-medium text-foreground">
-              Human validation gate
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              Problem profiles and challenge commissionings require explicit review and approval by authorized officers.
-            </p>
-          </div>
+        <div className="grid md:grid-cols-3 gap-4">
+          {guarantees.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.title} className="p-6 rounded-xl bg-card border border-border">
+                <Icon className="h-5 w-5 text-muted-foreground mb-4" />
+                <h3 className="text-[15px] font-medium text-foreground">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed font-light">
+                  {item.description}
+                </p>
+              </div>
+            );
+          })}
         </div>
 
-        <div className="mt-10 p-6 rounded-2xl bg-card border border-border-soft flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="mt-8 p-6 rounded-xl bg-card border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h4 className="text-base font-medium text-foreground">
-              Ready to submit or review community problems?
+            <h4 className="text-[15px] font-medium text-foreground">
+              Ready to submit a problem or apply as a team?
             </h4>
-            <p className="text-sm text-muted-foreground mt-1">
-              Access the reporting form or log in to the administrative console.
+            <p className="text-sm text-muted-foreground mt-1 font-light">
+              Open the reporting form or browse published problems to apply with your team.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/report"
-              className="inline-flex items-center justify-center h-10 px-5 rounded-full bg-primary text-primary-foreground text-xs font-medium hover:bg-[#003ecc] transition-all shadow-xs"
-            >
-              Report an issue
+          <div className="flex items-center gap-3 shrink-0">
+            <Link href="/problems">
+              <Button className="rounded-full px-5 h-10 text-xs font-medium gap-1.5">
+                Browse problems
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
             </Link>
-            <Link
-              href="/validate"
-              className="inline-flex items-center justify-center h-10 px-5 rounded-full bg-surface-soft border border-border-soft text-foreground text-xs font-medium hover:bg-surface-strong transition-all"
-            >
-              Open console
+            <Link href="/report">
+              <Button
+                variant="secondary"
+                className="rounded-full px-5 h-10 text-xs font-medium border border-border"
+              >
+                Report an issue
+              </Button>
             </Link>
           </div>
         </div>
@@ -72,3 +84,4 @@ export function LandingProvenance() {
     </section>
   );
 }
+

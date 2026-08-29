@@ -1,5 +1,7 @@
 # SIH26043 — Societal Problem Intelligence and Collaboration Platform
 
+Public interface copy must remain location neutral. Keep regional scope inside operational data views only, never in general page headings, navigation, metadata, or promotional copy.
+
 ## Product Name
 
 SIH26043 (working title: JharkhandConnect or to be named later)
