@@ -243,6 +243,22 @@ These features are intentionally excluded from the initial build.
 
 ---
 
+# Flexible Problem Model
+
+The platform accepts any community or institutional problem, not only physical infrastructure. Reports may describe service gaps, access barriers, safety concerns, education or health issues, livelihood problems, administrative delays, environmental concerns, or other local needs.
+
+Location, severity, evidence, affected population, and impact details are optional. A reporter must never be forced to invent a numeric population estimate. The system can preserve qualitative, financial, environmental, safety, or service impact instead.
+
+## Repeated reports and prior solutions
+
+The platform distinguishes exact duplicates, the same systemic problem, related but separate problems, and unrelated problems. Repeated reports in nearby locations can be grouped when their meaning and context agree. Geographic closeness by itself never creates a group.
+
+When a systemic problem is created or reviewed, the platform searches solution memory for relevant prior approaches. Students can reference and adapt these approaches in their proposals. Government officers can compare the proposal with the prior evidence, verification status, measured outcomes, and known limitations before selecting a team.
+
+AI helps users search, summarize, compare, and draft. Human reviewers retain all consequential authority.
+
+---
+
 # Success Metric
 
 The platform succeeds when a government official can answer: "If 20 different people report related problems, can the system discover that they may represent one systemic issue, explain why, and identify nearby institutions with the capabilities required to investigate it?" without guessing.

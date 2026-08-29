@@ -310,6 +310,18 @@ Weights (configurable, not scientifically validated):
 - 20% institutional relevance
 - 10% contextual factors
 
+## Flexible Problem and Solution Memory Rules
+
+Problems are not limited to roads, water, infrastructure, or other physical failures. A report may describe a service gap, access barrier, safety concern, education issue, health concern, livelihood issue, administrative delay, environmental concern, or another community need.
+
+Location, severity, and affected population are optional. The system must never require a reporter to invent an affected population number. Impact may instead be qualitative, financial, environmental, safety related, or service related.
+
+The fusion system must distinguish between exact duplicates, the same underlying systemic problem, related but separate problems, and unrelated problems. Repeated reports in a nearby area are strong evidence for one systemic problem only when semantic meaning and available context also agree. Geographic proximity alone is never sufficient.
+
+RAG and AI may search reports, verified sources, and solution memory, then explain likely relationships and relevant prior solutions. AI recommendations are drafts and require human review. Government officers retain authority to validate, split, merge, reject, or approve consequential decisions.
+
+When a systemic problem is reviewed, the system must search solution memory using problem meaning, type, symptoms, causes, capabilities, location context, and verified outcomes. Students, institutions, and government officers may use the search to understand, adapt, or compare prior approaches. A proposal may reference prior solutions and must state what it reuses, changes, and why.
+
 ---
 
 # Capability Matching Algorithm

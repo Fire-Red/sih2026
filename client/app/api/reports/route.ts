@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { problemReports, problemEvidence } from "@/lib/db/schema";
+import { problemReports, problemEvidence, users } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export async function GET(request: Request) {
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const category = searchParams.get("category");
     const reporterId = searchParams.get("reporterId");
 
-    let query = db.select().from(problemReports).orderBy(desc(problemReports.createdAt));
+    const query = db.select().from(problemReports).orderBy(desc(problemReports.createdAt));
 
     const reports = await query;
 
@@ -23,7 +23,12 @@ export async function GET(request: Request) {
       filtered = filtered.filter((r) => r.category === category);
     }
     if (reporterId) {
-      filtered = filtered.filter((r) => r.reporterId === reporterId);
+      const [reporter] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.firebaseUid, reporterId));
+      const storedReporterId = reporter?.id ?? reporterId;
+      filtered = filtered.filter((r) => r.reporterId === storedReporterId);
     }
 
     return NextResponse.json({ success: true, reports: filtered });

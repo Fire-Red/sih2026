@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { loginWithEmail } from "@/lib/firebase/auth-service";
+import { useUserStore } from "@/store/use-user-store";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 export function LoginForm() {
@@ -28,7 +29,22 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      await loginWithEmail(email, password);
+      const userSession = await loginWithEmail(email, password);
+      // Check if user is already onboarded
+      try {
+        const res = await fetch(`/api/users/profile?firebaseUid=${userSession.id}&email=${encodeURIComponent(userSession.email)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.data?.isOnboarded) {
+            const { setUser } = useUserStore.getState();
+            setUser(data.data);
+            router.push("/dashboard");
+            return;
+          }
+        }
+      } catch {
+        // Fall back to onboarding if check fails
+      }
       router.push("/onboarding");
     } catch (err: unknown) {
       const message =
