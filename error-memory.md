@@ -28,8 +28,6 @@ Verified fix: Remove only the generated `client/.next` directory, restart one cl
 
 Prevention: Restart the development server after changing build mode or when a chunk name in the browser does not match the current `.next/dev/static/chunks` output.
 
-### 2026 08 29
-
 ### Auth entry and workspace boundary
 
 Symptom: A signed-in user could revisit login or registration, and workspace pages could render briefly without a session.

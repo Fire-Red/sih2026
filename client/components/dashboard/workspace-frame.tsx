@@ -22,10 +22,8 @@ export function WorkspaceFrame({ children }: WorkspaceFrameProps) {
       return;
     }
 
-    startTransition(() => {
-      setSession(currentSession);
-      setChecked(true);
-    });
+    setSession(currentSession);
+    setChecked(true);
   }, [router]);
 
   if (!checked || !session) return null;

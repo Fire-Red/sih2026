@@ -65,6 +65,6 @@
 - [x] Created Pull Request & Merged main updates:
   - Raised [PR #3](https://github.com/Fire-Red/sih2026/pull/3) on branch `feat/rag-agent-and-api-routes`.
   - Resolved all merge conflicts cleanly and verified zero TypeScript errors.
-- [ ] Push schema updates to live Neon PostgreSQL via `drizzle-kit push`.
+- [x] Pushed schema updates to live Neon PostgreSQL via `drizzle-kit push` and confirmed the remote schema changes were applied successfully.
 - [ ] Build Government Review & Winner Selection Console (`/government/manage`).
 - [ ] Build Selected Team Active Project Workspace (`/projects/[id]`).

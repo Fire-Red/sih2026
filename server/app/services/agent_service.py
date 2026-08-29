@@ -1,5 +1,7 @@
 from typing import List, Dict, Any, Optional
+import json
 from langchain_core.tools import tool
+from langchain_core.messages import HumanMessage, ToolMessage
 from langchain_mistralai import ChatMistralAI
 from app.services.rag_service import rag_service
 from app.core.ai_provider import get_llm
@@ -30,14 +32,45 @@ class CivicAgent:
     def __init__(self):
         self.llm = get_llm()
         self.tools = [search_similar_civic_problems, decompose_problem_capabilities]
+        self.tool_map = {t.name: t for t in self.tools}
         self.llm_with_tools = self.llm.bind_tools(self.tools)
 
     def run(self, user_prompt: str) -> Dict[str, Any]:
         try:
-            response = self.llm_with_tools.invoke(user_prompt)
+            messages = [HumanMessage(content=user_prompt)]
+            response = self.llm_with_tools.invoke(messages)
+            tool_calls = getattr(response, "tool_calls", [])
+
+            if tool_calls:
+                messages.append(response)
+                for tc in tool_calls:
+                    tool_name = tc.get("name")
+                    tool_args = tc.get("args", {})
+                    tool_id = tc.get("id")
+
+                    selected_tool = self.tool_map.get(tool_name)
+                    if selected_tool:
+                        tool_output = selected_tool.invoke(tool_args)
+                    else:
+                        tool_output = {"error": f"Tool '{tool_name}' not found."}
+
+                    content_str = json.dumps(tool_output) if not isinstance(tool_output, str) else tool_output
+                    messages.append(
+                        ToolMessage(
+                            content=content_str,
+                            tool_call_id=tool_id or tool_name,
+                        )
+                    )
+
+                final_response = self.llm_with_tools.invoke(messages)
+                return {
+                    "content": final_response.content,
+                    "tool_calls": tool_calls,
+                }
+
             return {
                 "content": response.content,
-                "tool_calls": getattr(response, "tool_calls", [])
+                "tool_calls": [],
             }
         except Exception as e:
             return {"error": str(e), "fallback": f"Agent error: {str(e)}"}

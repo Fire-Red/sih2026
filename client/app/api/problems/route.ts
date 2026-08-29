@@ -56,6 +56,18 @@ export async function POST(request: Request) {
       );
     }
 
+    let parsedMaxTeams = 3;
+    if (maxTeamsAllowed !== undefined && maxTeamsAllowed !== null) {
+      const num = Number(maxTeamsAllowed);
+      if (!Number.isInteger(num) || num <= 0) {
+        return NextResponse.json(
+          { success: false, error: "maxTeamsAllowed must be a positive integer" },
+          { status: 400 }
+        );
+      }
+      parsedMaxTeams = num;
+    }
+
     const [inserted] = await db
       .insert(problemReports)
       .values({
@@ -70,7 +82,7 @@ export async function POST(request: Request) {
         blockOrPanchayat: blockOrPanchayat || null,
         pinCode: pinCode || null,
         status: "validated",
-        maxTeamsAllowed: parseInt(String(maxTeamsAllowed), 10) || 3,
+        maxTeamsAllowed: parsedMaxTeams,
         sponsoringDepartment: sponsoringDepartment || null,
         grantAmount: grantAmount || null,
       })

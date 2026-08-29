@@ -1,8 +1,13 @@
+import logging
 from typing import List, Dict, Any, Optional
 from app.db.connection import get_db_connection
 from app.core.ai_provider import get_embeddings_model, get_llm
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+
+logger = logging.getLogger(__name__)
+
+SIMILARITY_THRESHOLD = 0.65
 
 class RAGService:
     def __init__(self):
@@ -13,8 +18,12 @@ class RAGService:
         return self.embeddings.embed_query(text)
 
     def vector_search_problems(self, query_text: str, limit: int = 5, district: Optional[str] = None) -> List[Dict[str, Any]]:
-        query_vector = self.generate_embedding(query_text)
-        
+        try:
+            query_vector = self.generate_embedding(query_text)
+        except Exception as e:
+            logger.error("Embedding generation failed: %s", str(e), exc_info=True)
+            return [{"error": "Search service temporarily unavailable"}]
+
         sql = """
             SELECT 
                 pr.id,
@@ -29,14 +38,14 @@ class RAGService:
             WHERE 1=1
         """
         params: list = [query_vector]
-        
+
         if district:
             sql += " AND pr.district = %s"
             params.append(district)
-            
+
         sql += " ORDER BY pe.embedding <=> %s::vector ASC LIMIT %s;"
         params.extend([query_vector, limit])
-        
+
         try:
             with get_db_connection() as conn:
                 with conn.cursor() as cur:
@@ -44,36 +53,47 @@ class RAGService:
                     results = cur.fetchall()
                     return results
         except Exception as e:
-            return [{"error": f"Database search failed: {str(e)}"}]
+            logger.error("Database vector search failed: %s", str(e), exc_info=True)
+            return [{"error": "Search query failed"}]
 
     def answer_query_with_context(self, user_query: str, district: Optional[str] = None) -> Dict[str, Any]:
-        context_records = self.vector_search_problems(user_query, limit=5, district=district)
-        
-        formatted_context = ""
-        for i, item in enumerate(context_records, 1):
+        raw_records = self.vector_search_problems(user_query, limit=5, district=district)
+
+        filtered_records = []
+        for item in raw_records:
             if "error" in item:
                 continue
+            sim = item.get("similarity")
+            if sim is not None and float(sim) >= SIMILARITY_THRESHOLD:
+                filtered_records.append(item)
+
+        formatted_context = ""
+        for i, item in enumerate(filtered_records, 1):
             formatted_context += (
                 f"[{i}] Title: {item.get('title')}\n"
                 f"Category: {item.get('category')}, District: {item.get('district')}, Severity: {item.get('severity')}\n"
                 f"Description: {item.get('description')}\n\n"
             )
-            
+
         prompt = ChatPromptTemplate.from_messages([
             ("system", "You are the Civic Intelligence Agent. Answer the citizen or government query truthfully and concisely based on retrieved civic context. Do not fabricate records or impact data. If no context matches, explain clearly."),
             ("human", "Civic Problem Context:\n{context}\n\nUser Question: {query}")
         ])
-        
+
         chain = prompt | self.llm | StrOutputParser()
-        
+
         try:
-            response_text = chain.invoke({"context": formatted_context if formatted_context else "No problem records found in database.", "query": user_query})
+            response_text = chain.invoke({
+                "context": formatted_context if formatted_context else "No problem records found in database.",
+                "query": user_query
+            })
         except Exception as e:
-            response_text = f"AI reasoning fallback (check MISTRAL_API_KEY): {str(e)}"
-            
+            logger.error("Mistral LLM reasoning failed: %s", str(e), exc_info=True)
+            response_text = "AI reasoning service temporarily unavailable. Please try again later."
+
         return {
             "query": user_query,
-            "context_records": context_records,
+            "context_records": filtered_records,
             "answer": response_text
         }
 

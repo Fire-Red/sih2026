@@ -7,6 +7,7 @@ import {
   timestamp,
   pgEnum,
   jsonb,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("user_role", [
@@ -138,6 +139,10 @@ export const applicationStatusEnum = pgEnum("application_status", [
   "rejected",
 ]);
 
+export const reviewEventActionEnum = pgEnum("review_event_action", [
+  "winner_selected",
+]);
+
 export const projectStatusEnum = pgEnum("project_status", [
   "active",
   "prototype",
@@ -207,6 +212,7 @@ export const problemApplications = pgTable("problem_applications", {
     .references(() => studentTeams.id, { onDelete: "cascade" })
     .notNull(),
   applicantUserId: uuid("applicant_user_id").references(() => users.id, { onDelete: "set null" }),
+  reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
   pitchSummary: text("pitch_summary").notNull(),
   videoUrl: text("video_url"),
   pptUrl: text("ppt_url"),
@@ -216,13 +222,16 @@ export const problemApplications = pgTable("problem_applications", {
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  uniqueIndex("problem_applications_problem_team_idx").on(table.problemId, table.teamId),
+]);
 
 export const activeProjects = pgTable("active_projects", {
   id: uuid("id").defaultRandom().primaryKey(),
   problemId: uuid("problem_id")
     .references(() => problemReports.id, { onDelete: "cascade" })
-    .notNull(),
+    .notNull()
+    .unique(),
   teamId: uuid("team_id")
     .references(() => studentTeams.id, { onDelete: "cascade" })
     .notNull(),
@@ -233,6 +242,21 @@ export const activeProjects = pgTable("active_projects", {
   pilotEvidence: jsonb("pilot_evidence"),
   startDate: timestamp("start_date", { withTimezone: true }).defaultNow().notNull(),
   targetEndDate: timestamp("target_end_date", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const governmentReviewEvents = pgTable("government_review_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  problemId: uuid("problem_id")
+    .references(() => problemReports.id, { onDelete: "cascade" })
+    .notNull(),
+  applicationId: uuid("application_id")
+    .references(() => problemApplications.id, { onDelete: "cascade" })
+    .notNull(),
+  reviewerId: uuid("reviewer_id").references(() => users.id, { onDelete: "set null" }),
+  action: reviewEventActionEnum("action").notNull(),
+  notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -255,6 +279,7 @@ export type StudentTeam = typeof studentTeams.$inferSelect;
 export type NewStudentTeam = typeof studentTeams.$inferInsert;
 export type ProblemApplication = typeof problemApplications.$inferSelect;
 export type NewProblemApplication = typeof problemApplications.$inferInsert;
+export type GovernmentReviewEvent = typeof governmentReviewEvents.$inferSelect;
+export type NewGovernmentReviewEvent = typeof governmentReviewEvents.$inferInsert;
 export type ActiveProject = typeof activeProjects.$inferSelect;
 export type NewActiveProject = typeof activeProjects.$inferInsert;
-
