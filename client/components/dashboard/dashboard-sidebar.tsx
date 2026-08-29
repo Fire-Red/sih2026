@@ -142,7 +142,7 @@ export function DashboardSidebar({ session }: DashboardSidebarProps) {
 
       <div className="space-y-2 border-t border-border px-3 py-4">
         <Link
-          href="/dashboard"
+          href="/profile"
           title={showLabels ? undefined : "Profile"}
           className={`flex min-h-10 items-center gap-3 rounded-lg px-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
             showLabels ? "" : "justify-center"

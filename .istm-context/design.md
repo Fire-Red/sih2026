@@ -86,3 +86,13 @@ The user experience feels like an intelligent, high-trust civic field notebook: 
 3. **Buttons**: Primary buttons use `#4630eb` with white text. Secondary buttons use clean bordered surfaces with subtle hover transitions.
 4. **Forms & Input**: Clean inputs with hairline neutral borders that cleanly highlight with an indigo ring on focus.
 5. **No Clutter**: Avoid unnecessary decorative gradients, mesh overlays, or floating neon widgets. Keep every element purposeful.
+
+## Intelligence Workflow Surfaces
+
+The interface must support problems of many kinds. Do not assume that every report has a location, severity, evidence, or affected population. Show only relevant fields and use clear empty or not provided states when data does not apply.
+
+Fusion views should make the relationship between reports legible. Show whether reports are exact duplicates, the same systemic problem, related but separate, or unrelated. For repeated nearby reports, show the report count as repeated occurrence evidence, not as a fabricated population number.
+
+Solution memory should appear as a calm evidence panel inside problem review and proposal review. Each result should show relevance, source, verification status, measured outcome when available, and limitations. Student proposals should include a concise section for prior approaches considered, what is being reused, and what is being changed.
+
+AI assisted content must be visually distinct from confirmed records. Use a restrained label such as "AI assisted draft" and provide a nearby human review state. AI suggestions must never look like approval, verification, or measured impact.

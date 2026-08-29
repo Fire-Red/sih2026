@@ -6,7 +6,9 @@ import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { getSession } from "@/lib/auth/session";
 import type { UserSession } from "@/types/auth";
 
-interface WorkspaceFrameProps { children: ReactNode; }
+interface WorkspaceFrameProps {
+  children: ReactNode;
+}
 
 export function WorkspaceFrame({ children }: WorkspaceFrameProps) {
   const router = useRouter();
@@ -19,6 +21,7 @@ export function WorkspaceFrame({ children }: WorkspaceFrameProps) {
       router.replace("/login");
       return;
     }
+
     startTransition(() => {
       setSession(currentSession);
       setChecked(true);
@@ -26,5 +29,13 @@ export function WorkspaceFrame({ children }: WorkspaceFrameProps) {
   }, [router]);
 
   if (!checked || !session) return null;
-  return <div className="min-h-screen bg-background"><DashboardSidebar session={session} /><main className="min-h-screen px-4 py-8 sm:px-8 lg:py-12 lg:pl-72 lg:pr-12">{children}</main></div>;
+
+  return (
+    <div className="min-h-screen bg-background">
+      <DashboardSidebar session={session} />
+      <main className="min-h-screen px-4 py-8 sm:px-8 lg:py-12 lg:pl-72 lg:pr-12">
+        {children}
+      </main>
+    </div>
+  );
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { problemReports, problemEvidence } from "@/lib/db/schema";
+import { problemReports, problemEvidence, users } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export async function GET(request: Request) {
@@ -10,20 +10,25 @@ export async function GET(request: Request) {
     const category = searchParams.get("category");
     const reporterId = searchParams.get("reporterId");
 
-    let query = db.select().from(problemReports).orderBy(desc(problemReports.createdAt));
+    const query = db.select().from(problemReports).orderBy(desc(problemReports.createdAt));
 
     const reports = await query;
 
     // Filter in-memory or refine with conditions
     let filtered = reports;
     if (district && district !== "all") {
-      filtered = filtered.filter((r) => r.district.toLowerCase() === district.toLowerCase());
+      filtered = filtered.filter((r) => r.district?.toLowerCase() === district.toLowerCase());
     }
     if (category && category !== "all") {
       filtered = filtered.filter((r) => r.category === category);
     }
     if (reporterId) {
-      filtered = filtered.filter((r) => r.reporterId === reporterId);
+      const [reporter] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.firebaseUid, reporterId));
+      const storedReporterId = reporter?.id ?? reporterId;
+      filtered = filtered.filter((r) => r.reporterId === storedReporterId);
     }
 
     return NextResponse.json({ success: true, reports: filtered });
@@ -57,9 +62,9 @@ export async function POST(request: Request) {
       evidence = [],
     } = body;
 
-    if (!title || !description || !category || !district) {
+    if (!title || !description || !category) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields: title, description, category, district" },
+        { success: false, error: "Missing required fields: title, description, category" },
         { status: 400 }
       );
     }
@@ -74,7 +79,7 @@ export async function POST(request: Request) {
         category,
         subcategory: subcategory || null,
         severity: severity || "medium",
-        affectedPopulationEstimate: affectedPopulationEstimate ? parseInt(affectedPopulationEstimate, 10) : 100,
+        affectedPopulationEstimate: affectedPopulationEstimate ? parseInt(affectedPopulationEstimate, 10) : null,
         state,
         district,
         blockOrPanchayat: blockOrPanchayat || null,
