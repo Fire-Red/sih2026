@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       filtered = filtered.filter((p) => p.category === category);
     }
     if (district && district !== "all") {
-      filtered = filtered.filter((p) => p.district.toLowerCase() === district.toLowerCase());
+      filtered = filtered.filter((p) => (p.district ?? "").toLowerCase() === district.toLowerCase());
     }
     if (status && status !== "all") {
       filtered = filtered.filter((p) => p.status === status);
