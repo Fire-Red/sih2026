@@ -1,10 +1,11 @@
 import { getSession } from "@/lib/auth/session";
-import type { ReviewDetail, ReviewQueueItem } from "@/types/government-review";
+import type { ReviewDetail, ReviewProblem, ReviewQueueItem, SimilarReportMatch } from "@/types/government-review";
 import {
   failureResponseSchema,
   successDetailResponseSchema,
   successQueueResponseSchema,
   successSelectionResponseSchema,
+  successSimilarResponseSchema,
 } from "./schemas/government-review-schemas";
 import { z } from "zod";
 
@@ -61,6 +62,51 @@ export async function getReviewDetail(problemId: string): Promise<ReviewDetail> 
   };
 }
 
+export async function updateReportStatus(
+  problemId: string,
+  status: "submitted" | "under_review" | "validated" | "rejected"
+): Promise<{ success: true; problem: ReviewProblem }> {
+  return request("/api/government/status", z.object({ success: z.literal(true), problem: z.any() }), {
+    method: "PATCH",
+    body: JSON.stringify({ problemId, status }),
+  });
+}
+
+export async function getSimilarReports(
+  reportId: string,
+  text: string,
+  category?: string,
+  latitude?: string | null,
+  longitude?: string | null
+): Promise<SimilarReportMatch[]> {
+  const response = await request("/api/government/similar", successSimilarResponseSchema, {
+    method: "POST",
+    body: JSON.stringify({
+      reportId,
+      text,
+      category,
+      latitude,
+      longitude,
+    }),
+  });
+  return response.results;
+}
+
+export async function publishProblemStatement(payload: {
+  problemId: string;
+  mergedReportIds?: string[];
+  title: string;
+  description: string;
+  maxTeamsAllowed?: number;
+  sponsoringDepartment?: string;
+  grantAmount?: string;
+}): Promise<{ success: true; problem: ReviewProblem }> {
+  return request("/api/government/publish", z.object({ success: z.literal(true), problem: z.any() }), {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function selectReviewWinner(
   problemId: string,
   applicationId: string,
@@ -71,4 +117,3 @@ export async function selectReviewWinner(
     body: JSON.stringify({ applicationId, reviewNotes: reviewNotes || undefined }),
   });
 }
-

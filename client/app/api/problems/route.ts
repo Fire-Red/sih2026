@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { problemReports } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
@@ -10,20 +10,12 @@ export async function GET(request: Request) {
     const district = searchParams.get("district");
     const status = searchParams.get("status");
 
-    const allProblems = await db.select().from(problemReports).orderBy(desc(problemReports.createdAt));
-
-    let filtered = allProblems;
-    if (category && category !== "all") {
-      filtered = filtered.filter((p) => p.category === category);
-    }
-    if (district && district !== "all") {
-      filtered = filtered.filter((p) => (p.district ?? "").toLowerCase() === district.toLowerCase());
-    }
-    if (status && status !== "all") {
-      filtered = filtered.filter((p) => p.status === status);
-    }
-
-    return NextResponse.json({ success: true, problems: filtered });
+    const filters = [];
+    if (category && category !== "all") filters.push(eq(problemReports.category, category as typeof problemReports.category.enumValues[number]));
+    if (district && district !== "all") filters.push(eq(problemReports.district, district));
+    if (status && status !== "all") filters.push(eq(problemReports.status, status as typeof problemReports.status.enumValues[number]));
+    const problems = await db.select().from(problemReports).where(filters.length ? and(...filters) : undefined).orderBy(desc(problemReports.updatedAt));
+    return NextResponse.json({ success: true, problems });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to fetch problems";
     return NextResponse.json({ success: false, error: message }, { status: 500 });

@@ -19,10 +19,14 @@ export const reviewProblemSchema = z.object({
   severity: z.string(),
   district: z.string().nullable(),
   blockOrPanchayat: z.string().nullable(),
+  latitude: z.string().nullable().optional(),
+  longitude: z.string().nullable().optional(),
   status: z.string(),
   maxTeamsAllowed: z.number(),
   appliedTeamsCount: z.number(),
   selectedTeamId: z.string().nullable(),
+  sponsoringDepartment: z.string().nullable().optional(),
+  grantAmount: z.string().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -65,9 +69,22 @@ export const reviewEvidenceSchema = z.object({
 
 export const reviewEventSchema = z.object({
   id: z.string(),
-  action: z.literal("winner_selected"),
+  action: z.enum(["winner_selected", "status_updated", "problem_published"]),
   notes: z.string().nullable(),
   createdAt: z.string(),
+});
+
+export const similarReportMatchSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  category: z.string(),
+  district: z.string().nullable(),
+  blockOrPanchayat: z.string().nullable(),
+  severity: z.string(),
+  status: z.string(),
+  similarity: z.number(),
+  distanceKm: z.number().nullable(),
 });
 
 export const successQueueResponseSchema = z.object({
@@ -89,8 +106,12 @@ export const successSelectionResponseSchema = z.object({
   selectedApplicationId: z.string(),
 });
 
+export const successSimilarResponseSchema = z.object({
+  success: z.literal(true),
+  results: z.array(similarReportMatchSchema),
+});
+
 export const failureResponseSchema = z.object({
   success: z.literal(false),
   error: z.string(),
 });
-

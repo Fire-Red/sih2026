@@ -62,6 +62,14 @@ Verified fix: Auth entry forms redirect existing sessions to `/dashboard`; the w
 
 Prevention: Keep auth-entry redirects and protected-shell checks in shared components so new role routes inherit the same boundary.
 
+### External evidence image caused review page crash
+
+Symptom: The government review page crashed when evidence used an external image URL that was not configured in Next image hosts.
+
+Root cause: Arbitrary evidence URLs were rendered through `next/image`, which requires every remote hostname to be configured ahead of time.
+
+Verified fix: Render evidence URLs through a native image element in the evidence gallery. Evidence sources can vary, so the gallery no longer assumes a fixed image host.
+
 ### Stale generated route types after route relocation
 
 Symptom: TypeScript referenced a removed route after moving a page into its required URL path.

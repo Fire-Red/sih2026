@@ -111,6 +111,7 @@ export const reportCategoryEnum = pgEnum("report_category", [
   "energy_power",
   "rural_livelihoods",
   "accessibility_public_services",
+  "other",
 ]);
 
 export const reportSeverityEnum = pgEnum("report_severity", [

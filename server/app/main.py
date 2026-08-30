@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 from app.config import settings
 from app.services.rag_service import rag_service
 from app.services.agent_service import civic_agent
+from app.services.fusion_service import fusion_service
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -31,6 +32,14 @@ class QueryRequest(BaseModel):
 
 class AgentRequest(BaseModel):
     prompt: str
+
+class FindRelatedRequest(BaseModel):
+    report_id: Optional[str] = None
+    text: str
+    category: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    limit: Optional[int] = 5
 
 @app.get("/")
 def root():
@@ -66,6 +75,18 @@ def rag_ask(req: QueryRequest):
 def agent_chat(req: AgentRequest):
     result = civic_agent.run(req.prompt)
     return result
+
+@app.post("/api/v1/fusion/find-related")
+def find_related(req: FindRelatedRequest):
+    results = fusion_service.find_related_reports(
+        report_id=req.report_id,
+        text=req.text,
+        category=req.category,
+        latitude=req.latitude,
+        longitude=req.longitude,
+        limit=req.limit or 5
+    )
+    return {"success": True, "results": results}
 
 if __name__ == "__main__":
     import uvicorn

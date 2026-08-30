@@ -1,165 +1,99 @@
 "use client";
 
-import React, { useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { Filter, Layers3, Loader2, MapPin, Search } from "lucide-react";
 import { WorkspaceFrame } from "@/components/dashboard/workspace-frame";
-import { ProblemCard, Problem } from "@/components/problems/problem-card";
-import { ApplicationDrawer } from "@/components/problems/application-drawer";
-import { LOCAL_DISTRICTS } from "@/lib/constants/report-categories";
-import { Layers3, Filter, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { REPORT_CATEGORIES } from "@/lib/constants/report-categories";
 
-const SEED_PROBLEMS: Problem[] = [
-  {
-    id: "p1",
-    title: "Groundwater contamination and high fluoride concentration in village tube wells",
-    district: "Central district",
-    category: "Water & Sanitation",
-    severity: "critical",
-    reportCount: 14,
-    maxTeams: 3,
-    appliedTeams: 2,
-    sponsoringDept: "Drinking Water and Sanitation Department",
-    summary: "Excessive fluoride concentration (>1.5 mg/L) detected across multiple bore wells, causing dental and skeletal fluorosis in school children.",
-  },
-  {
-    id: "p2",
-    title: "Post harvest storage deficit and cold chain spoilage for perishable produce",
-    district: "East district",
-    category: "Agriculture & Irrigation",
-    severity: "high",
-    reportCount: 9,
-    maxTeams: 3,
-    appliedTeams: 1,
-    sponsoringDept: "Department of Agriculture",
-    summary: "Lack of localized micro cold storage results in 35% tomato and seasonal vegetable spoilage before reaching weekly regional markets.",
-  },
-  {
-    id: "p3",
-    title: "Washed out bridge culvert cutting off primary healthcare transit during monsoons",
-    district: "Hill district",
-    category: "Rural Infrastructure",
-    severity: "high",
-    reportCount: 8,
-    maxTeams: 3,
-    appliedTeams: 3,
-    sponsoringDept: "Rural Development Department",
-    summary: "Seasonal stream swelling washes out unreinforced culvert, isolating 4 panchayats from emergency ambulance routes for 3 months each year.",
-  },
-  {
-    id: "p4",
-    title: "Defunct solar mini-grid battery bank failure in tribal hamlet cluster",
-    district: "Valley district",
-    category: "Energy & Power",
-    severity: "medium",
-    reportCount: 5,
-    maxTeams: 3,
-    appliedTeams: 0,
-    sponsoringDept: "Renewable Energy Development Agency",
-    summary: "Lead-acid battery degradation left 45 households without reliable lighting and micro-irrigation power for over 6 months.",
-  },
-];
+interface Problem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  severity: "low" | "medium" | "high" | "critical";
+  district: string | null;
+  status: string;
+  endorsementCount: number;
+  appliedTeamsCount: number;
+  maxTeamsAllowed: number;
+  updatedAt: string;
+}
+
+const statusLabels: Record<string, string> = {
+  submitted: "Submitted",
+  under_review: "Under review",
+  fused_clustered: "Related reports found",
+  validated: "Validated",
+  assigned_to_hei: "Team assigned",
+  solution_in_progress: "Solution in progress",
+  resolved_deployed: "Outcome recorded",
+  rejected: "Closed",
+};
+
+const categoryName = (value: string) => REPORT_CATEGORIES.find((item) => item.id === value)?.name ?? value.replaceAll("_", " ");
 
 export default function ProblemsPage() {
-  const [problems] = useState<Problem[]>(SEED_PROBLEMS);
-  const [selectedDistrict, setSelectedDistrict] = useState("all");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeProblem, setActiveProblem] = useState<Problem | null>(null);
+  const [problems, setProblems] = useState<Problem[]>([]);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filtered = problems.filter((p) => {
-    if (selectedDistrict !== "all" && p.district !== selectedDistrict) return false;
-    if (selectedCategory !== "all" && p.category !== selectedCategory) return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return (
-        p.title.toLowerCase().includes(q) ||
-        p.summary.toLowerCase().includes(q) ||
-        p.district.toLowerCase().includes(q)
-      );
+  const loadProblems = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/problems");
+      const data = (await response.json()) as { success?: boolean; problems?: Problem[]; error?: string };
+      if (!response.ok || !data.success || !data.problems) throw new Error(data.error ?? "Unable to load problems.");
+      setProblems(data.problems);
+    } catch (loadError: unknown) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load problems.");
+    } finally {
+      setLoading(false);
     }
-    return true;
-  });
+  };
 
-  return (
-    <WorkspaceFrame>
-      <div className="mx-auto max-w-5xl px-4 pb-16 text-foreground sm:px-0">
-        <header className="border-b border-border pb-8">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-primary mb-2">
-            <Layers3 className="h-4 w-4" /> Open Problem Statements
-          </div>
-          <h1 className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
-            Validated Community Challenges
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground max-w-2xl font-light leading-relaxed">
-            Public directory of government validated systemic problems. Student and research teams can propose field solutions within allocated team quotas.
-          </p>
-        </header>
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/problems").then(async (response) => {
+      const data = (await response.json()) as { success?: boolean; problems?: Problem[]; error?: string };
+      if (!response.ok || !data.success || !data.problems) throw new Error(data.error ?? "Unable to load problems.");
+      if (active) setProblems(data.problems);
+    }).catch((loadError: unknown) => {
+      if (active) setError(loadError instanceof Error ? loadError.message : "Unable to load problems.");
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
 
-        {/* Filter Bar */}
-        <section className="py-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search problems, keywords, or areas..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-xl border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            />
-          </div>
+  const filteredProblems = useMemo(() => problems.filter((problem) => {
+    const searchable = `${problem.title} ${problem.description} ${problem.district ?? ""}`.toLowerCase();
+    return (!query.trim() || searchable.includes(query.toLowerCase())) && (category === "all" || problem.category === category) && (status === "all" || problem.status === status);
+  }), [category, problems, query, status]);
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-              <Filter className="h-3.5 w-3.5" /> Filter:
-            </div>
-            <select
-              value={selectedDistrict}
-              onChange={(e) => setSelectedDistrict(e.target.value)}
-              className="h-10 px-3 rounded-xl border border-border bg-card text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="all">All Districts</option>
-              {LOCAL_DISTRICTS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+  return <WorkspaceFrame>
+    <main className="mx-auto max-w-6xl px-4 pb-16 sm:px-8">
+      <header className="border-b border-border pb-8 pt-6 lg:pt-2">
+        <p className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-primary"><Layers3 className="h-4 w-4" /> Problem directory</p>
+        <h1 className="max-w-3xl text-3xl font-medium tracking-[-0.05em] text-foreground sm:text-5xl">Problems that need a clear next step.</h1>
+        <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground">Browse reported problems and follow the information that has been confirmed so far.</p>
+      </header>
 
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="h-10 px-3 rounded-xl border border-border bg-card text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="all">All Sectors</option>
-              <option value="Water & Sanitation">Water & Sanitation</option>
-              <option value="Agriculture & Irrigation">Agriculture & Irrigation</option>
-              <option value="Rural Infrastructure">Rural Infrastructure</option>
-              <option value="Energy & Power">Energy & Power</option>
-            </select>
-          </div>
-        </section>
+      <section className="flex flex-col gap-3 border-b border-border py-6 lg:flex-row lg:items-center">
+        <div className="relative min-w-0 flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search problems or places" className="h-11 pl-10" /></div>
+        <div className="flex flex-wrap gap-3"><label className="sr-only" htmlFor="problem-category">Category</label><select id="problem-category" value={category} onChange={(event) => setCategory(event.target.value)} className="h-11 rounded-md border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><option value="all">All categories</option>{REPORT_CATEGORIES.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><label className="sr-only" htmlFor="problem-status">Status</label><select id="problem-status" value={status} onChange={(event) => setStatus(event.target.value)} className="h-11 rounded-md border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><option value="all">All statuses</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+      </section>
 
-        {/* Problem List */}
-        <section className="space-y-4">
-          {filtered.length === 0 ? (
-            <div className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">
-              <p className="text-sm">No problem statements match the selected criteria.</p>
-            </div>
-          ) : (
-            filtered.map((problem) => (
-              <ProblemCard
-                key={problem.id}
-                problem={problem}
-                onApply={(p) => setActiveProblem(p)}
-              />
-            ))
-          )}
-        </section>
-
-        <ApplicationDrawer
-          problem={activeProblem}
-          onClose={() => setActiveProblem(null)}
-        />
-      </div>
-    </WorkspaceFrame>
-  );
+      {loading && <div className="flex items-center gap-3 py-16 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin text-primary" /> Loading confirmed problems</div>}
+      {!loading && error && <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6"><p className="text-sm text-destructive">{error}</p><Button type="button" variant="outline" onClick={() => void loadProblems()} className="mt-4">Try again</Button></div>}
+      {!loading && !error && filteredProblems.length === 0 && <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center"><Filter className="mx-auto h-5 w-5 text-muted-foreground" /><h2 className="mt-4 text-base font-medium text-foreground">No matching problems</h2><p className="mt-2 text-sm text-muted-foreground">Try a different search or report a problem you have noticed.</p><Link href="/report" className="mt-5 inline-flex"><Button type="button">Report a problem</Button></Link></div>}
+      {!loading && !error && filteredProblems.length > 0 && <div className="space-y-3 py-6"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{filteredProblems.length} available records</p>{filteredProblems.map((problem) => <Link key={problem.id} href={`/problems/${problem.id}`} className="group block rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-6"><div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground"><span>{categoryName(problem.category)}</span><span aria-hidden="true">/</span><span className="text-primary">{statusLabels[problem.status] ?? problem.status}</span></div><h2 className="mt-3 max-w-3xl text-lg font-medium leading-snug tracking-[-0.025em] text-foreground">{problem.title}</h2><p className="mt-2 line-clamp-2 max-w-3xl text-sm leading-6 text-muted-foreground">{problem.description}</p><div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">{problem.district && <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{problem.district}</span>}<span>{problem.endorsementCount} supporting reports</span><span>Updated {new Date(problem.updatedAt).toLocaleDateString()}</span></div></div><div className="shrink-0 lg:w-36 lg:text-right"><p className="text-xs text-muted-foreground">Team places</p><p className="mt-1 text-sm font-medium text-foreground">{problem.appliedTeamsCount} of {problem.maxTeamsAllowed} filled</p><span className="mt-4 inline-flex text-xs font-medium text-primary">View details</span></div></div></Link>)}</div>}
+    </main>
+  </WorkspaceFrame>;
 }

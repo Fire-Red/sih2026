@@ -2,7 +2,6 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-  Activity,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -13,6 +12,7 @@ import {
   Network,
   UserRound,
   X,
+  Briefcase,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -34,10 +34,9 @@ interface NavigationItem {
 
 const navigation: NavigationItem[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Problems", href: "/problems", icon: Network },
-  { label: "Report an issue", href: "/report", icon: FileText },
-  { label: "Review proposals", href: "/government/manage", icon: Gavel, roles: ["government"] },
-  { label: "Activity", href: "/track", icon: Activity, roles: ["citizen"] },
+  { label: "Review Console", href: "/government/manage", icon: Gavel, roles: ["government", "admin"] },
+  { label: "Directory", href: "/problems", icon: Network },
+  { label: "Report an issue", href: "/report", icon: FileText, roles: ["citizen"] },
 ];
 
 const panelTransition = {
@@ -102,7 +101,7 @@ export function DashboardSidebar({ session }: DashboardSidebarProps) {
             C
           </span>
           {showLabels && (
-            <span className="truncate text-base font-medium tracking-[-0.02em] text-foreground">
+            <span className="truncate text-base font-medium tracking-tight text-foreground">
               CivicPulse
             </span>
           )}
@@ -111,7 +110,7 @@ export function DashboardSidebar({ session }: DashboardSidebarProps) {
 
       <nav aria-label="Workspace navigation" className="flex-1 px-3 py-5">
         <p
-          className={`mb-2 px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground ${
+          className={`mb-2 px-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground ${
             showLabels ? "" : "sr-only"
           }`}
         >
@@ -177,10 +176,10 @@ export function DashboardSidebar({ session }: DashboardSidebarProps) {
           {showLabels && (
             <div className="min-w-0">
               <p className="truncate text-xs font-medium text-foreground">
-                {session?.name || "Civic User"}
+                {session?.name || "Officer"}
               </p>
-              <p className="truncate text-[10px] text-muted-foreground">
-                {session?.email || ""}
+              <p className="truncate text-[10px] text-muted-foreground capitalize">
+                {session?.role || "government"}
               </p>
             </div>
           )}

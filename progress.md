@@ -1,6 +1,43 @@
 # CivicPulse Platform Implementation Progress
 
 ## Completed Deliverables
+- [x] Simplified report type selection on 2026 08 30:
+  - Replaced the large category grid with a text first flow and four plain language quick choices.
+  - Added a collapsed all topics control and a clear Something else path.
+  - Collapsed place and evidence into optional sections to remove unnecessary scrolling.
+  - Added a documentary context image as a local page asset and kept the form focused on the user report.
+  - Verified TypeScript and the changed report wizard lint check.
+- [x] Replaced generic report category icons on 2026 08 30:
+  - Added original inline SVG illustrations for each report category.
+  - Used distinct visual forms for water, agriculture, infrastructure, health, environment, energy, access, and other concerns.
+  - Cleared the generated Next cache so the updated report interface loads in development.
+  - Verified the report wizard with TypeScript and targeted ESLint.
+- [x] Refined report category interaction visuals on 2026 08 30:
+  - Replaced repeated generic document icons with custom inline SVG category marks.
+  - Kept category meaning broad enough for roads, water, health, services, and other community concerns.
+  - Verified TypeScript and targeted ESLint for the report wizard.
+- [x] Rebuilt the citizen report page from the ground up on 2026 08 30:
+  - Replaced the four step wizard with a guided single page workspace.
+  - Added broad problem coverage, including a clear catch all category.
+  - Added a live preparation panel and a real success state with the report reference.
+  - Kept place and evidence optional, with upload progress and recoverable errors.
+  - Added the database enum migration for the catch all category.
+- [x] Improved report topic coverage and form states on 2026 08 30:
+  - Added access and public service concerns as a supported report category.
+  - Added distinct topic icons instead of repeating one generic icon.
+  - Made location optional so reporters are not blocked when an exact area is unknown.
+  - Kept optional urgency and affected people details out of the primary flow.
+  - Verified the changed report wizard and category constants with TypeScript and targeted ESLint.
+- [x] Fixed external evidence image rendering on 2026 08 30:
+  - Government review evidence no longer crashes when an image URL comes from an unconfigured remote host.
+  - Evidence previews now support varying source hosts without requiring a fixed Next image host list.
+  - TypeScript passes. Full lint remains blocked by an existing `any` error in the government status route.
+- [x] Refined the citizen report form on 2026 08 30:
+  - Reframed the first step around what the reporter noticed, with clearer topic descriptions.
+  - Moved people affected and urgency into an optional context section.
+  - Clarified the purpose of place and evidence collection, including privacy guidance.
+  - Replaced internal preview language with a plain human review explanation.
+  - Preserved existing map selection, evidence upload, validation, and activity handoff behavior.
 - [x] Updated report evidence presentation on 2026 08 29:
   - ImageKit hosted images now render as previews instead of exposing long storage URLs.
   - Documents show a clear attachment label, with an explicit open action when needed.
@@ -43,6 +80,13 @@
   - **LandingFooter** ([`landing-footer.tsx`](file:///workspaces/web/client/components/landing/landing-footer.tsx)): Structured directory footer with accreditation notices.
 
 ## Current Sprint Deliverables
+- [x] Redesigned the problem discovery and citizen activity flow on 2026 08 30:
+  - Removed seeded problem records from the main problem directory and connected it to the database API.
+  - Added server side category, district, and status filtering for problem records.
+  - Added a full problem detail route with confirmed fields, location, evidence, status progress, and honest missing states.
+  - Added the authenticated citizen activity route for following submitted reports and their current status.
+  - Updated report submission to open the user activity view after success.
+  - Added loading, error, empty, keyboard focus, and responsive states across the new problem surfaces.
 - [x] Improved citizen report intake usability and evidence handling:
   - Added place search to the map so reporters can set the location anywhere by town, landmark, or PIN code.
   - Kept browser location detection and direct map pin placement, with map recentering after search or GPS selection.
@@ -106,7 +150,18 @@
   - Shows explicit loading, unavailable, empty, and populated states with retry handling.
   - Removed the unverified service health claim and fixed accessible action links.
   - Requires the rotated Firebase Admin private key in `FIREBASE_ADMIN_PRIVATE_KEY` for live review data.
-- [x] Simplified MVP User Ecosystem to 4 Primary Roles & Unified Government Queue:
-  - Deprecated and removed the Industry role from active onboarding, navigation, profile settings, and dashboards.
-  - Restricted the active MVP ecosystem to Citizen, Government, University/Lab, and Student.
-  - Updated government review queue query to include all reported community problems and candidate clusters, enabling newly submitted issues to appear immediately in the single government officer workspace.
+- [x] Redesigned and Implemented Unified Government Decision Console ([Spec 0010](file:///workspaces/web/.istm-context/specs/0010-government-workspace-and-decision-console.md)):
+  - Built community report intake queue with quick triage statuses (`submitted`, `under_review`, `validated`, `rejected`).
+  - Added photo and document evidence gallery with high-resolution image lightbox modal (`report-evidence-gallery.tsx`).
+  - Integrated AI similarity search endpoint (`/api/v1/fusion/find-related`) computing text embeddings and geographic distance with 1-click merge selection (`ai-similar-reports-card.tsx`).
+  - Created open problem statement publisher allowing quotas, grant amounts, and merged context configuration (`problem-statement-publisher.tsx`).
+  - Added side-by-side student pitch review matrix with 3-minute video walkthrough player and presentation deck preview (`application-pitch-matrix.tsx`).
+  - Streamlined winner selection with automated active project workspace creation.
+  - Verified 100% compiler-grade TypeScript compilation (`tsc --noEmit` exited 0).
+- [x] Decluttered Government Workspace & Injected Custom Geometric SVG Icons:
+  - Designed custom crisp geometric SVG components in `client/components/ui/civic-icons.tsx` (`InboxIcon`, `ChallengeIcon`, `TrophyAwardIcon`, `AiSparkleIcon`, `PinLocationIcon`, `EvidencePhotoIcon`, `EvidenceDocIcon`).
+  - Replaced crowded permanent panels with progressive disclosure: compact collapsible AI similarity assistant banner.
+  - Converted evidence gallery into a horizontal thumbnail strip with full-screen lightbox modal.
+  - Cleaned up navigation sidebar and overview dashboard for the Government Officer persona.
+  - Verified clean TypeScript compilation and Next.js static asset build.
+
