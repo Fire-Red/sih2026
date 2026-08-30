@@ -1,5 +1,27 @@
 # Error Memory
 
+## 2026 08 30
+
+### Standalone seed script did not load local environment
+
+Symptom: The approved reset script stopped before deleting data because `DATABASE_URL` was missing when run through `tsx`.
+
+Root cause: The application runtime loads local environment files through the framework, but a standalone script does not automatically load `.env.local`.
+
+Verified fix: Added a `db:reset-seed` command that sets `DOTENV_CONFIG_PATH=.env.local` and loads `dotenv/config` before importing the database module.
+
+Prevention: Every standalone database script must explicitly load its environment before importing the database client.
+
+### Citizen navigation inherited operational sidebar spacing
+
+Symptom: Citizen pages displayed an operational sidebar and reserved a large empty left gutter even though citizens have a simple reporting and tracking journey.
+
+Root cause: The shared workspace frame rendered the same sidebar and desktop offset for every role.
+
+Verified fix: Citizens now receive a compact top navigation, while operational roles retain the sidebar. Citizen content no longer uses the sidebar offset.
+
+Prevention: Keep navigation and layout boundaries role aware. Use a top navigation for simple citizen flows and a sidebar for multi stage operational workflows.
+
 ## 2026 08 29
 
 ### Report evidence was URL-only
@@ -105,3 +127,21 @@ Symptom: Newly submitted citizen problem reports did not appear in the governmen
 Root cause: The `/api/government/reviews` route used an `innerJoin` on `problem_applications` and required `status = 'validated'`, filtering out newly submitted problem reports that did not yet have attached student team pitches.
 
 Verified fix: Switched to `leftJoin` on `problem_applications` and removed the restrictive filter so all unassigned and newly reported problems appear in the queue for validation and decision making.
+
+### Strict lint errors in government status and citizen dashboard
+
+Symptom: Targeted lint failed on two explicit `any` casts.
+
+Root cause: A report status update and badge variant helper bypassed the inferred TypeScript contracts.
+
+Verified fix: Replaced both casts with literal status and badge variant types. Targeted lint and TypeScript now pass for the changed files.
+
+### AI service was not connected to client RAG surfaces
+
+Symptom: FastAPI exposed RAG and agent endpoints, but the browser had no typed client integration for them.
+
+Root cause: Only the government similar reports route proxied to FastAPI, while the direct rewrite exposed no authenticated client workflow.
+
+Verified fix: Added authenticated Next.js proxy routes for RAG search, grounded questions, and agent chat, then connected the grounded assistant to government review. AI failures show an unavailable state.
+
+Prevention: Keep AI credentials and backend URLs server side. Route browser AI requests through authenticated Next.js handlers and validate both request and response shapes.

@@ -27,35 +27,43 @@ export async function POST(request: Request) {
 
     const maxTeams = typeof maxTeamsAllowed === "number" && maxTeamsAllowed > 0 ? maxTeamsAllowed : 3;
 
-    const [published] = await db
-      .update(problemReports)
-      .set({
-        title,
-        description,
-        status: "validated",
-        maxTeamsAllowed: maxTeams,
-        sponsoringDepartment: sponsoringDepartment || null,
-        grantAmount: grantAmount || null,
-        updatedAt: new Date(),
-      })
-      .where(eq(problemReports.id, problemId))
-      .returning();
+    const published = await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(problemReports)
+        .set({
+          title,
+          description,
+          status: "validated",
+          maxTeamsAllowed: maxTeams,
+          sponsoringDepartment: sponsoringDepartment || null,
+          grantAmount: grantAmount || null,
+          updatedAt: new Date(),
+        })
+        .where(eq(problemReports.id, problemId))
+        .returning();
+
+      if (!updated) {
+        return null;
+      }
+
+      if (Array.isArray(mergedReportIds) && mergedReportIds.length > 0) {
+        await tx
+          .update(problemReports)
+          .set({
+            status: "validated",
+            updatedAt: new Date(),
+          })
+          .where(inArray(problemReports.id, mergedReportIds));
+      }
+
+      return updated;
+    });
 
     if (!published) {
       return NextResponse.json(
         { success: false, error: "Problem report not found." },
         { status: 404 }
       );
-    }
-
-    if (Array.isArray(mergedReportIds) && mergedReportIds.length > 0) {
-      await db
-        .update(problemReports)
-        .set({
-          status: "validated",
-          updatedAt: new Date(),
-        })
-        .where(inArray(problemReports.id, mergedReportIds));
     }
 
     return NextResponse.json({ success: true, problem: published });

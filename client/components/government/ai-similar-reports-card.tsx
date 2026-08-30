@@ -95,10 +95,13 @@ export function AiSimilarReportsCard({
             {matches.map((item) => {
               const isSelected = selectedReportIds.includes(item.id);
               return (
-                <div
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={isSelected}
                   key={item.id}
                   onClick={() => onToggleSelect(item.id)}
-                  className={`flex cursor-pointer items-start justify-between gap-3 rounded-lg p-2.5 text-xs transition-colors ${
+                  className={`w-full text-left flex cursor-pointer items-start justify-between gap-3 rounded-lg p-2.5 text-xs transition-colors ${
                     isSelected
                       ? "bg-primary/15 font-medium text-foreground"
                       : "bg-surface/80 hover:bg-surface text-muted-foreground"
@@ -129,7 +132,7 @@ export function AiSimilarReportsCard({
                   >
                     {isSelected && <Check className="h-3 w-3" />}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

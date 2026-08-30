@@ -27,18 +27,30 @@ export function ProblemStatementPublisher({
   onClose,
   onPublish,
 }: ProblemStatementPublisherProps) {
-  const [title, setTitle] = useState(primaryProblem.title);
-  const [description, setDescription] = useState(
+  const [prevSyncKey, setPrevSyncKey] = useState("");
+  const currentSyncKey = `${primaryProblem.id}:${selectedSimilarReports.map((r) => r.id).join(",")}:${open}`;
+
+  const defaultDescription =
     selectedSimilarReports.length > 0
       ? `${primaryProblem.description}\n\nMerged Community Context:\n` +
         selectedSimilarReports.map((r, i) => `[${i + 1}] ${r.title}: ${r.description}`).join("\n")
-      : primaryProblem.description
-  );
+      : primaryProblem.description;
+
+  const [title, setTitle] = useState(primaryProblem.title);
+  const [description, setDescription] = useState(defaultDescription);
   const [maxTeams, setMaxTeams] = useState(primaryProblem.maxTeamsAllowed || 3);
   const [department, setDepartment] = useState("Urban Development & Civic Infrastructure");
   const [grantAmount, setGrantAmount] = useState("₹50,000 Milestone Grant");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (currentSyncKey !== prevSyncKey && open) {
+    setPrevSyncKey(currentSyncKey);
+    setTitle(primaryProblem.title);
+    setDescription(defaultDescription);
+    setMaxTeams(primaryProblem.maxTeamsAllowed || 3);
+    setError(null);
+  }
 
   if (!open) return null;
 

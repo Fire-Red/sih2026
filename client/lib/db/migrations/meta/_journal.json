@@ -22,6 +22,20 @@
       "when": 1788066695116,
       "tag": "0002_huge_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788078557854,
+      "tag": "0003_sleepy_sandman",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788080275019,
+      "tag": "0004_pale_cobalt_man",
+      "breakpoints": true
     }
   ]
 }

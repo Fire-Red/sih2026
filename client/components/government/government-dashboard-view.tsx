@@ -2,34 +2,29 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  AlertCircle,
-  ArrowRight,
-  CheckCircle2,
-  FileSearch,
-  RefreshCw,
-  ShieldCheck,
-  Layers,
-  Award,
-  Clock,
-  Sparkles,
-} from "lucide-react";
+import { AlertCircle, RefreshCw, ArrowRight, BellRing, MapPin, ClipboardList, Search, FolderKanban, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getReviewQueue } from "@/lib/api/government-review-api";
-import type { ReviewQueueItem } from "@/types/government-review";
+import { Badge } from "@/components/ui/badge";
+import { getReviewQueue, getSimilarityAlerts } from "@/lib/api/government-review-api";
+import type { ReviewQueueItem, SimilarityAlert } from "@/types/government-review";
 
 export function GovernmentDashboardView() {
   const [reviews, setReviews] = useState<ReviewQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<SimilarityAlert[]>([]);
 
   const loadReviews = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setReviews(await getReviewQueue());
+      const [queue, similarityAlerts] = await Promise.all([getReviewQueue(), getSimilarityAlerts()]);
+      setReviews(queue);
+      setAlerts(similarityAlerts);
     } catch (requestError: unknown) {
-      setError(requestError instanceof Error ? requestError.message : "Unable to load review data.");
+      setError(
+        requestError instanceof Error ? requestError.message : "Unable to load review data."
+      );
     } finally {
       setLoading(false);
     }
@@ -41,167 +36,193 @@ export function GovernmentDashboardView() {
   }, [loadReviews]);
 
   const newComplaintsCount = reviews.filter((r) => r.problem.status === "submitted").length;
-  const activeChallengesCount = reviews.filter((r) => r.problem.status === "validated" && !r.problem.selectedTeamId).length;
+  const activeChallengesCount = reviews.filter(
+    (r) => r.problem.status === "validated" && !r.problem.selectedTeamId
+  ).length;
   const totalPendingPitches = reviews.reduce((acc, curr) => acc + curr.pendingApplicationCount, 0);
+  const activeProjectsCount = reviews.filter((r) => Boolean(r.problem.selectedTeamId)).length;
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-6">
+    <div className="space-y-10">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200/80 pb-6">
         <div>
-          <span className="font-mono text-xs uppercase tracking-wider text-primary font-medium">
-            Department Command Overview
-          </span>
-          <h1 className="text-2xl font-medium tracking-tight text-foreground sm:text-3xl mt-1">
-            Officer Decision Dashboard
+          <p className="text-xs font-medium text-neutral-500 mb-1">
+            Officer overview
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">
+            Decision dashboard
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Live telemetry of incoming community complaints, active challenge quotas, and student pitches.
+          <p className="mt-1 text-sm text-neutral-600">
+            Intake stream, active challenges, and pending student team proposals.
           </p>
         </div>
-        <Link
-          href="/government/manage"
-          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
-        >
-          <FileSearch className="mr-2 h-4 w-4" aria-hidden="true" />
-          Open Decision Console
+        <Link href="/government/manage">
+          <Button className="bg-neutral-900 text-white hover:bg-neutral-800 gap-1.5">
+            Open review console <ArrowRight className="h-4 w-4" />
+          </Button>
         </Link>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-5 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-              New Intake
-            </span>
-            <Clock className="h-4 w-4 text-amber-600" />
-          </div>
-          <p className="font-mono text-3xl font-medium text-foreground">
-            {loading ? "..." : error ? "-" : newComplaintsCount}
-          </p>
-          <p className="text-xs text-muted-foreground">Awaiting officer triage</p>
-        </div>
+      <nav aria-label="Government workspace" className="grid gap-2 sm:grid-cols-4">
+        <Link href="/government/manage" className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted">
+          <ClipboardList className="h-4 w-4 text-primary" aria-hidden="true" /> Review intake
+        </Link>
+        <Link href="/government/manage" className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted">
+          <Search className="h-4 w-4 text-primary" aria-hidden="true" /> Similar reports
+        </Link>
+        <Link href="/government/manage" className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted">
+          <FolderKanban className="h-4 w-4 text-primary" aria-hidden="true" /> Challenges
+        </Link>
+        <Link href="/government/manage" className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted">
+          <Settings2 className="h-4 w-4 text-primary" aria-hidden="true" /> Review settings
+        </Link>
+      </nav>
 
-        <div className="rounded-xl border border-border bg-card p-5 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-              Published Challenges
-            </span>
-            <Layers className="h-4 w-4 text-primary" />
-          </div>
-          <p className="font-mono text-3xl font-medium text-foreground">
-            {loading ? "..." : error ? "-" : activeChallengesCount}
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-4 border-b border-neutral-200/80 pb-8">
+        <div>
+          <p className="text-3xl font-semibold tracking-tight text-neutral-900">
+            {loading ? "-" : error ? "-" : newComplaintsCount}
           </p>
-          <p className="text-xs text-muted-foreground">Open for student applications</p>
+          <span className="text-xs text-neutral-500 mt-1 block">
+            New intake
+          </span>
         </div>
-
-        <div className="rounded-xl border border-border bg-card p-5 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-              Student Pitches
-            </span>
-            <Award className="h-4 w-4 text-primary" />
-          </div>
-          <p className="font-mono text-3xl font-medium text-foreground">
-            {loading ? "..." : error ? "-" : totalPendingPitches}
+        <div>
+          <p className="text-3xl font-semibold tracking-tight text-neutral-900">
+            {loading ? "-" : error ? "-" : activeChallengesCount}
           </p>
-          <p className="text-xs text-muted-foreground">Ready for side-by-side review</p>
+          <span className="text-xs text-neutral-500 mt-1 block">
+            Published challenges
+          </span>
         </div>
-
-        <div className="rounded-xl border border-border bg-card p-5 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-              AI Matching Engine
-            </span>
-            <Sparkles className="h-4 w-4 text-primary" />
-          </div>
-          <p className="text-sm font-medium text-foreground mt-2">Active Multi-Signal</p>
-          <p className="text-xs text-muted-foreground">Automatic distance & similarity check</p>
+        <div>
+          <p className="text-3xl font-semibold tracking-tight text-neutral-900">
+            {loading ? "-" : error ? "-" : totalPendingPitches}
+          </p>
+          <span className="text-xs text-neutral-500 mt-1 block">
+            Pending pitches
+          </span>
+        </div>
+        <div>
+          <p className="text-3xl font-semibold tracking-tight text-neutral-900">
+            {loading ? "-" : error ? "-" : activeProjectsCount}
+          </p>
+          <span className="text-xs text-neutral-500 mt-1 block">
+            Active projects
+          </span>
         </div>
       </div>
 
       {error && (
         <div
           role="alert"
-          className="flex items-center gap-3 rounded-lg border border-destructive/25 bg-destructive/5 p-4 text-sm text-destructive"
+          className="flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700"
         >
           <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="flex-1">{error}</span>
           <Button type="button" variant="outline" size="sm" onClick={() => void loadReviews()}>
-            <RefreshCw className="mr-2 h-3.5 w-3.5" aria-hidden="true" />
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
             Retry
           </Button>
         </div>
       )}
 
+      {alerts.length > 0 && (
+        <section className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <div className="flex items-start gap-3">
+            <BellRing className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />
+            <div>
+              <h2 className="text-sm font-medium text-foreground">High confidence report matches</h2>
+              <p className="mt-1 text-xs text-muted-foreground">New reports are ready for officer review. No report has been merged automatically.</p>
+            </div>
+          </div>
+          <div className="mt-4 divide-y divide-primary/10 border-t border-primary/10">
+            {alerts.slice(0, 5).map((alert) => (
+              <Link key={alert.relationship.id} href={`/government/manage/${alert.relationship.reportId}`} className="flex items-center justify-between gap-4 py-3 text-xs hover:underline">
+                <span className="min-w-0 truncate font-medium text-foreground">{alert.relatedReport.title}</span>
+                <span className="flex shrink-0 items-center gap-2 text-muted-foreground"><MapPin className="h-3 w-3" />{alert.relationship.geographicDistanceKm ? `${alert.relationship.geographicDistanceKm} km` : "Distance unavailable"}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium text-foreground">Actionable Intake Stream</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">
+            Recent intake stream
+          </h2>
           <Link
             href="/government/manage"
-            className="inline-flex min-h-10 items-center gap-1 text-xs font-medium text-primary hover:underline"
+            className="text-xs font-medium text-neutral-600 hover:text-neutral-900 transition-colors"
           >
-            Go to full workspace <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            View all
           </Link>
         </div>
 
         {loading ? (
-          <div className="grid gap-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 animate-pulse rounded-xl border border-border bg-card/60" />
-            ))}
+          <div className="py-8 text-center text-xs text-neutral-400">
+            Loading intake stream...
           </div>
         ) : error ? (
-          <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-8 text-center text-sm text-destructive">
+          <div className="rounded-xl border border-neutral-200 p-8 text-center text-xs text-neutral-500">
             Data is currently unavailable.
           </div>
         ) : reviews.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-12 text-center">
-            <CheckCircle2 className="mx-auto h-8 w-8 text-semantic-up" aria-hidden="true" />
-            <h3 className="mt-3 text-sm font-medium text-foreground">No reports requiring triage</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              New community complaints will appear here in real time.
-            </p>
+          <div className="rounded-xl border border-dashed border-neutral-200 p-8 text-center text-xs text-neutral-500">
+            No incoming reports in the queue.
           </div>
         ) : (
-          <div className="space-y-3">
-            {reviews.slice(0, 5).map(({ problem, pendingApplicationCount, applicationCount }) => (
-              <div
-                key={problem.id}
-                className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between transition-colors hover:border-primary/40"
-              >
-                <div className="min-w-0 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 font-mono text-[10px] uppercase text-primary">
-                      {problem.category.replace("_", " ")}
-                    </span>
-                    <span className="rounded-full border border-border bg-surface-soft px-2 py-0.5 font-mono text-[10px] uppercase text-muted-foreground">
-                      {problem.status.replace("_", " ")}
-                    </span>
-                    {problem.district && (
-                      <span className="text-xs text-muted-foreground">
-                        • {problem.district}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-sm font-medium text-foreground line-clamp-1">
-                    {problem.title}
-                  </h3>
-                </div>
-
-                <div className="flex items-center gap-4 shrink-0">
-                  <div className="text-right font-mono text-xs">
-                    <p className="font-medium text-foreground">{pendingApplicationCount} pitches</p>
-                    <p className="text-[10px] text-muted-foreground">{applicationCount} total submitted</p>
-                  </div>
-                  <Link
-                    href="/government/manage"
-                    className="inline-flex min-h-9 items-center justify-center rounded-md bg-primary px-3.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+          <div className="overflow-x-auto rounded-xl border border-neutral-200/80 bg-white">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-neutral-100 bg-neutral-50/50">
+                  <th className="py-2.5 px-4 font-medium text-neutral-500">
+                    Title
+                  </th>
+                  <th className="py-2.5 px-4 font-medium text-neutral-500">
+                    Category
+                  </th>
+                  <th className="py-2.5 px-4 font-medium text-neutral-500">
+                    District
+                  </th>
+                  <th className="py-2.5 px-4 font-medium text-neutral-500">
+                    Date
+                  </th>
+                  <th className="py-2.5 px-4 font-medium text-neutral-500">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {reviews.slice(0, 8).map(({ problem }) => (
+                  <tr
+                    key={problem.id}
+                    className="hover:bg-neutral-50 transition-colors cursor-pointer"
                   >
-                    Triage <ArrowRight className="ml-1 h-3 w-3" aria-hidden="true" />
-                  </Link>
-                </div>
-              </div>
-            ))}
+                    <td className="py-3 px-4 text-neutral-900 font-medium max-w-[240px] truncate">
+                      <Link href={`/government/manage/${problem.id}`} className="hover:underline">
+                        {problem.title}
+                      </Link>
+                    </td>
+                    <td className="py-3 px-4 text-neutral-600">
+                      {problem.category.replace("_", " ")}
+                    </td>
+                    <td className="py-3 px-4 text-neutral-600">
+                      {problem.district || "General"}
+                    </td>
+                    <td className="py-3 px-4 text-neutral-400">
+                      {new Date(problem.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4">
+                      <Badge variant="secondary">
+                        {problem.status.replace("_", " ")}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

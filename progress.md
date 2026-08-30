@@ -1,5 +1,105 @@
 # CivicPulse Platform Implementation Progress
 
+## Feature Implementation Pass
+- [x] Connected the client to the FastAPI AI service on 2026 08 30:
+  - Added authenticated Next.js proxy routes for RAG search, grounded questions, and agent chat.
+  - Added typed client API helpers with Zod response validation.
+  - Added a contextual assistant to the government review workspace.
+  - Removed the unauthenticated direct AI rewrite and documented `AI_BACKEND_URL`.
+  - AI failures now return an honest unavailable state instead of fabricated results.
+- [x] Completed the first government only AI dashboard integration on 2026 08 30:
+  - Added a contextual assistant to the government problem review workspace.
+  - Kept the assistant restricted to authenticated government review flows.
+  - Confirmed the client API contracts with TypeScript and targeted lint.
+- [x] Added the government dashboard evidence view on 2026 08 30:
+  - Shows the latest matching report by submission date.
+  - Shows distance from the selected report when coordinates are available.
+  - Shows prior verified solutions, approach, capabilities, and source link.
+  - Keeps no result, loading, and unavailable states explicit.
+  - Keeps AI evidence and prior records separate from government decisions.
+- [x] Added automatic report intelligence processing on 2026 08 30:
+  - New reports enqueue a processing record in Upstash Redis.
+  - FastAPI generates one embedding, stores it in pgvector, and evaluates related reports.
+  - Matching uses semantic similarity, category, and a maximum 20 km candidate distance.
+  - High confidence is similarity at least 0.85 and distance at most 20 km.
+  - The government review mode toggle controls automatic high confidence queueing, never automatic approval.
+  - Processing failures leave the report saved and expose an unavailable state.
+- [x] Connected automatic similarity alerts to the government dashboard on 2026 08 30:
+  - High confidence relationships are persisted and loaded into the officer dashboard.
+  - Each alert links to the review workspace and shows the calculated distance.
+  - The officer review mode is stored per published problem as manual review or automatic high confidence queueing.
+  - Automatic queueing never performs an official merge or approval.
+- [x] Added database backed foundations for endorsements, institution capabilities, capability requirements, impact measurements, impact verification, and solution memory on 2026 08 30.
+- [x] Added authenticated API routes for report endorsements, deterministic capability matching, institution capability submissions, impact measurements, impact verification, project milestone updates, and solution memory search and promotion.
+- [x] Generated migration `client/lib/db/migrations/0003_sleepy_sandman.sql` and applied it to the configured remote database. Schema changes were confirmed applied by Drizzle.
+- [x] TypeScript compiler verification passes for the client.
+- [ ] Remaining feature work: systemic problem entities and full fusion persistence, institution and student workspace surfaces, challenge and capability assembly UI, complete impact UI, and automated test coverage.
+- [ ] Production build remains blocked by an existing Next.js build environment failure: Turbopack cannot spawn a subprocess in the sandbox, while webpack cannot parse TypeScript `--showConfig` output.
+
+## Next Focused Work Item
+- [ ] Continue government dashboard AI integration only:
+  - Add a government dashboard entry point for grounded RAG questions.
+  - Add related record search results with source record links and similarity context.
+  - Show whether a verified prior solution exists for the same type of problem.
+  - Explain how the prior solution worked, its measured outcome, source, and limitations.
+  - Show the latest matching report submission and its location, date, and evidence state.
+  - Distinguish a prior verified solution from a new report that only indicates recurrence.
+  - Add capability decomposition as an assisted draft with explicit human review language.
+  - Add loading, unavailable, empty, retry, and permission denied states.
+  - Keep all AI actions behind authenticated Next.js proxy routes.
+  - Do not extend this UI integration to citizen, student, institution, or industry surfaces.
+  - Do not redesign the visual system while completing this work.
+
+## Latest UI Refinement
+- [x] Simplified onboarding presentation on 2026 08 30:
+  - Removed the duplicated dark setup panel that repeated the auth layout explanation.
+  - Widened the auth content container so onboarding is not compressed into a login-width column.
+  - Reduced role cards to compact, scannable rows with a clear selected state.
+  - Preserved the existing onboarding steps, profile fields, location capture, and save behavior.
+
+- [x] Reset and prepared neutral AI test data on 2026 08 30:
+  - Added `npm run db:reset-seed` for an explicitly destructive workflow data reset.
+  - Preserved users, profiles, institutions, capabilities, and database structure.
+  - Removed old reports, evidence, embeddings, relationships, teams, applications, projects, review events, impact records, requirements, and solution memory before reseeding.
+  - Replaced location specific seed content with synthetic reports across multiple Indian states.
+  - Kept two validated challenges available for student proposal testing.
+  - Verified the live database reset and seed completed successfully.
+
+- [x] Added authenticated student proposal uploads on 2026 08 30:
+  - Added the student pitch submission screen at `/student/submit`.
+  - Added ImageKit uploads for pitch videos and PDF or PPT slide decks, with link fallbacks.
+  - Added authenticated student team ownership checks for team and application mutations.
+  - Added government dashboard workspace shortcuts for intake, similar reports, challenges, and review settings.
+  - Verified the RAG fusion path with two seeded water reports, matching them at 1.77 km with medium confidence.
+  - Updated the database CRUD test fixture to use neutral India wide test identity data.
+
+## Completed Deliverables
+- [x] Configured Next.js 16 `proxy.ts`, hardened authentication guards, and resolved browse 401s on 2026 08 30:
+  - Migrated from legacy `middleware.ts` to Next.js 16 root `proxy.ts` exporting canonical `proxy` request handler.
+  - Implemented client-side `AuthRouteGuard` preventing authenticated users from accessing `/login`, `/register`, or `/onboarding` and redirecting directly to `/dashboard`.
+  - Added session cookie synchronization (`civicpulse_auth`) across `setSession`, `clearSession`, and store lifecycle for server-level redirection.
+  - Fixed browse 401 errors across `/problems`, `/problems/[id]`, `/track`, and `/report` by removing `WorkspaceFrame` redirect barriers from public routes.
+  - Added unified typed API proxy client in `client/lib/api/proxy.ts` and configured AI backend rewrites in `next.config.ts`.
+  - Updated `LandingNav` to dynamically display "Dashboard" for authenticated users and "Sign in" for anonymous visitors.
+  - Verified 100% strict TypeScript (`tsc --noEmit`) and ESLint with 0 errors.
+- [x] Hardened API authorization, public layouts, and review console integrity on 2026 08 30:
+  - Updated Spec 0010 with canonical API routes (`/api/government/status`, `/api/government/similar`, `/api/government/publish`, `/api/government/reviews/[problemId]/select`) and language-tagged code fences.
+  - Hardened `/api/dashboard/citizen` to derive identity via server-side verified Firebase auth tokens instead of user-supplied query params.
+  - Moved public problem directory (`/problems`) and problem details (`/problems/[id]`) to public layout (`LandingNav` / `LandingFooter`) removing auth redirect barriers.
+  - Wrapped government challenge publishing updates across primary and merged reports in atomic `db.transaction()`.
+  - Enforced public vs non-public visibility policies across `/api/problems` and `/api/problems/[id]`.
+  - Made similar report selection controls keyboard-accessible with `role="checkbox"` and `aria-checked`.
+  - Added robust YouTube URL parser in pitch matrix supporting standard watch and short `youtu.be` links.
+  - Replaced `z.any()` with `reviewProblemSchema` in government review client response validation.
+  - Added category filtering and explicit null coordinate checks in AI backend `fusion_service`.
+  - Verified 100% strict TypeScript compilation and targeted ESLint without regressions.
+- [x] Introduced role appropriate navigation on 2026 08 30:
+  - Citizens now use a simple top navigation for Home, reporting, tracking, and exploring problems.
+  - Government and other operational roles retain the left sidebar for multi stage work.
+  - Citizen pages no longer reserve empty desktop space for the operational sidebar.
+  - Profile and sign out remain available without opening a modal.
+  - Verified TypeScript and targeted ESLint for the changed navigation and workspace layout.
+
 ## Completed Deliverables
 - [x] Simplified report type selection on 2026 08 30:
   - Replaced the large category grid with a text first flow and four plain language quick choices.

@@ -4,10 +4,10 @@ import { LoginForm } from "@/components/auth/login-form";
 
 export default function LoginPage() {
   return (
-    <div className="mx-auto w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+    <div>
       <AuthHeader
-        title="Welcome back"
-        subtitle="Sign in to continue to your workspace."
+        title="Sign in"
+        subtitle="Enter your credentials to access your workspace."
       />
       <LoginForm />
     </div>

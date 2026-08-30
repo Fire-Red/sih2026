@@ -25,6 +25,7 @@ export const reviewProblemSchema = z.object({
   maxTeamsAllowed: z.number(),
   appliedTeamsCount: z.number(),
   selectedTeamId: z.string().nullable(),
+  similarReviewMode: z.enum(["manual_review", "queue_high_confidence"]).optional(),
   sponsoringDepartment: z.string().nullable().optional(),
   grantAmount: z.string().nullable().optional(),
   createdAt: z.string(),
@@ -85,6 +86,7 @@ export const similarReportMatchSchema = z.object({
   status: z.string(),
   similarity: z.number(),
   distanceKm: z.number().nullable(),
+  createdAt: z.string().nullable(),
 });
 
 export const successQueueResponseSchema = z.object({

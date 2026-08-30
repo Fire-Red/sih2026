@@ -12,6 +12,24 @@ interface ApplicationPitchMatrixProps {
   onSelectWinner: (application: ReviewApplication) => void;
 }
 
+function toYouTubeEmbedUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "youtu.be" || parsed.hostname.endsWith(".youtu.be")) {
+      const videoId = parsed.pathname.replace(/^\//, "");
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+    }
+    if (parsed.hostname === "youtube.com" || parsed.hostname.endsWith(".youtube.com")) {
+      const videoId = parsed.searchParams.get("v");
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+      if (parsed.pathname.startsWith("/embed/")) return url;
+    }
+  } catch {
+    // fallback
+  }
+  return url.replace("watch?v=", "embed/");
+}
+
 export function ApplicationPitchMatrix({
   applications,
   disabled,
@@ -160,7 +178,7 @@ export function ApplicationPitchMatrix({
           {activeVideoUrl && (
             activeVideoUrl.includes("youtube.com") || activeVideoUrl.includes("youtu.be") ? (
               <iframe
-                src={activeVideoUrl.replace("watch?v=", "embed/")}
+                src={toYouTubeEmbedUrl(activeVideoUrl)}
                 title="Student pitch video"
                 className="h-full w-full border-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

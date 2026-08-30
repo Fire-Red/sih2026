@@ -89,6 +89,7 @@ export const useUserStore = create<UserState>()(
         set({ user: null, isLoading: false });
         if (typeof window !== "undefined") {
           localStorage.removeItem("civicpulse_session");
+          document.cookie = "civicpulse_auth=; path=/; max-age=0; SameSite=Lax";
         }
       },
 

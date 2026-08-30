@@ -3,82 +3,47 @@ import Link from "next/link";
 
 export function LandingFooter() {
   return (
-    <footer className="bg-foreground text-background py-16 px-6">
-      <div className="max-w-5xl mx-auto">
-        <div className="grid sm:grid-cols-3 gap-10 pb-12 border-b border-background/10">
-          <div>
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-xs">
-                C
-              </div>
-              <span className="text-sm font-medium text-background">CivicPulse</span>
+    <footer className="bg-neutral-50 border-t border-neutral-200/80 py-16 px-6">
+      <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between gap-10">
+        <div>
+          <span className="text-sm font-semibold tracking-tight text-neutral-900 block mb-2">
+            CivicPulse
+          </span>
+          <p className="text-xs text-neutral-500 max-w-xs leading-relaxed">
+            Societal problem intelligence & collaboration platform. Turn community signals into verified systemic impact.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 text-xs">
+          <div className="space-y-2.5">
+            <p className="font-medium text-neutral-900">Platform</p>
+            <div className="flex flex-col gap-2 text-neutral-500">
+              <Link href="/problems" className="hover:text-neutral-900">Directory</Link>
+              <Link href="/track" className="hover:text-neutral-900">Tracker</Link>
+              <Link href="/report" className="hover:text-neutral-900">Report issue</Link>
             </div>
-            <p className="text-xs text-background/50 leading-relaxed font-light max-w-[200px]">
-              A shared place for reporting, reviewing, and solving local problems.
-            </p>
           </div>
-
-          <div>
-            <p className="text-xs font-medium text-background/40 uppercase tracking-widest mb-4">
-              Platform
-            </p>
-            <ul className="space-y-2.5 text-sm text-background/60">
-              <li>
-                <Link href="/problems" className="hover:text-background transition-colors">
-                  Open problems
-                </Link>
-              </li>
-              <li>
-                <Link href="/report" className="hover:text-background transition-colors">
-                  Report an issue
-                </Link>
-              </li>
-              <li>
-                <Link href="/track" className="hover:text-background transition-colors">
-                  Live tracker
-                </Link>
-              </li>
-              <li>
-                <Link href="/#how-it-works" className="hover:text-background transition-colors">
-                  How it works
-                </Link>
-              </li>
-            </ul>
+          <div className="space-y-2.5">
+            <p className="font-medium text-neutral-900">Portals</p>
+            <div className="flex flex-col gap-2 text-neutral-500">
+              <Link href="/government/manage" className="hover:text-neutral-900">Government</Link>
+              <Link href="/dashboard" className="hover:text-neutral-900">Students</Link>
+              <Link href="/dashboard" className="hover:text-neutral-900">Institutions</Link>
+            </div>
           </div>
-
-          <div>
-            <p className="text-xs font-medium text-background/40 uppercase tracking-widest mb-4">
-              Portals
-            </p>
-            <ul className="space-y-2.5 text-sm text-background/60">
-              <li>
-                <Link href="/login" className="hover:text-background transition-colors">
-                  Student portal
-                </Link>
-              </li>
-              <li>
-                <Link href="/validate" className="hover:text-background transition-colors">
-                  Government console
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className="hover:text-background transition-colors">
-                  Institution portal
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className="hover:text-background transition-colors">
-                  Sign in
-                </Link>
-              </li>
-            </ul>
+          <div className="space-y-2.5">
+            <p className="font-medium text-neutral-900">System</p>
+            <div className="flex flex-col gap-2 text-neutral-500">
+              <Link href="/login" className="hover:text-neutral-900">Sign in</Link>
+              <Link href="/register" className="hover:text-neutral-900">Create account</Link>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-background/30 font-light">
-          <span>CivicPulse · Community intelligence</span>
-          <span>Data sourced from official government and accredited institutional directories only.</span>
-        </div>
+      <div className="max-w-5xl mx-auto mt-12 pt-6 border-t border-neutral-200/60 flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-neutral-400">
+        <p>© {new Date().getFullYear()} CivicPulse. All rights reserved.</p>
+        <p>100% data provenance guaranteed.</p>
       </div>
     </footer>
   );

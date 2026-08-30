@@ -1,98 +1,108 @@
 ---
-version: 4.1.0
-name: Expo Notion Minimal (Light Mode)
-description: A clean, calm light mode interface blending Expo clarity and telemetry precision with Notion warm minimalist paper aesthetics. It features one indigo interactive color (#4630eb), warm canvas tone (#fbfaf7), crisp ink hierarchy, and quiet hairline dividers.
+version: 5.0.0
+name: Civic White (Light Mode)
+description: A pure white, Apple-gallery civic intelligence platform. Stark white canvas, deep ink hierarchy, single Electric Indigo interactive color (#4630eb), hairline borders, zero gradients, zero decorative shadows. Government-grade authority through typography and whitespace alone.
 
 colors:
-  canvas: "#fbfaf7"
-  surface: "#ffffff"
-  surface-soft: "#f3f1ec"
-  ink: "#172033"
-  ink-secondary: "#3e495d"
-  ink-muted: "#687386"
-  border: "#e6e3dd"
-  border-soft: "#efede8"
+  canvas: "#ffffff"
+  surface-inset: "#f5f5f7"
+  surface-raised: "#ffffff"
+  ink-strong: "#0f172a"
+  ink-body: "#334155"
+  ink-caption: "#64748b"
+  ink-muted: "#94a3b8"
+  border: "#e5e7eb"
+  border-soft: "#f0f0f2"
   primary: "#4630eb"
-  primary-hover: "#3924c7"
-  primary-pressed: "#2e1e9f"
+  primary-deep: "#3924c7"
+  primary-press: "#2e1e9f"
+  primary-soft: "#ebe8fd"
+  primary-subdued: "#f5f3ff"
   on-primary: "#ffffff"
-  warm-accent: "#f3dfc7"
-  success: "#27865d"
-  warning: "#b88635"
-  error: "#c93652"
+  success: "#16a34a"
+  warning: "#d97706"
+  error: "#dc2626"
 
 typography:
   display:
-    fontFamily: "Inter, sans-serif"
-    fontSize: "clamp(2.8rem, 7vw, 5.5rem)"
-    fontWeight: 500
-    lineHeight: 0.98
-    letterSpacing: "-0.065em"
+    fontFamily: "Inter, -apple-system, sans-serif"
+    fontSize: "clamp(2.5rem, 5vw, 3.5rem)"
+    fontWeight: 600
+    lineHeight: 1.04
+    letterSpacing: "-0.04em"
   heading:
-    fontFamily: "Inter, sans-serif"
-    fontSize: "clamp(1.75rem, 3vw, 3rem)"
+    fontFamily: "Inter, -apple-system, sans-serif"
+    fontSize: "clamp(1.5rem, 3vw, 2rem)"
+    fontWeight: 600
+    lineHeight: 1.1
+    letterSpacing: "-0.03em"
+  title:
+    fontFamily: "Inter, -apple-system, sans-serif"
+    fontSize: "1.125rem"
     fontWeight: 500
-    lineHeight: 1.08
-    letterSpacing: "-0.045em"
+    lineHeight: 1.3
+    letterSpacing: "-0.02em"
   body:
-    fontFamily: "Inter, sans-serif"
-    fontSize: "1rem"
+    fontFamily: "Inter, -apple-system, sans-serif"
+    fontSize: "0.9375rem"
     fontWeight: 400
-    lineHeight: 1.55
+    lineHeight: 1.6
+    letterSpacing: "-0.01em"
   caption:
-    fontFamily: "Inter, sans-serif"
+    fontFamily: "Inter, -apple-system, sans-serif"
+    fontSize: "0.8125rem"
+    fontWeight: 500
+    lineHeight: 1.4
+    letterSpacing: "0"
+  mono:
+    fontFamily: "JetBrains Mono, ui-monospace, monospace"
     fontSize: "0.75rem"
     fontWeight: 500
     lineHeight: 1.4
-    letterSpacing: "0.01em"
-  data:
-    fontFamily: "JetBrains Mono, monospace"
-    fontSize: "0.75rem"
-    fontWeight: 500
-    lineHeight: 1.4
+    letterSpacing: "0"
 
 geometry:
-  control: "0.625rem"
-  card: "0.875rem"
-  feature: "1.25rem"
+  control: "8px"
+  card: "12px"
+  feature: "16px"
   pill: "9999px"
 
+elevation:
+  flat: "No shadow, no border"
+  hairline: "1px border-border"
+  raised: "1px border + shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]"
+  float: "backdrop-blur(16px) + semi-transparent bg"
+
 motion:
-  interaction: "140ms ease-out"
-  reveal: "220ms cubic-bezier(0.22, 1, 0.36, 1)"
-  rule: Fast, discrete transitions. No sluggish animations. Respect prefers-reduced-motion.
+  interaction: "120ms ease-out"
+  reveal: "200ms cubic-bezier(0.16, 1, 0.3, 1)"
+  rule: "No GSAP. No scroll-jacking. Respect prefers-reduced-motion."
 ---
 
-# Expo Notion Minimal Design System (Light Mode)
+# Civic White Design System (v5.0.0)
 
 ## Aesthetic Philosophy
 
-The platform pairs **Expo developer precision** (functional telemetry tags, crisp monospace accents, sharp data density, single electric indigo accent `#4630eb`) with **Notion warm minimalism** (tactile paper off-white canvas `#fbfaf7`, calm sans-serif typography, quiet hairline dividers `#e6e3dd`, and structured clean layout blocks).
-
-The user experience feels like an intelligent, high-trust civic field notebook: minimal, effortless to read, uncluttered, and free from noise or fake decorative elements.
+Pure white canvas inspired by Apple's gallery-silence and Antigravity's stark clarity. The platform achieves authority through typography hierarchy, generous whitespace, and a single Electric Indigo accent color. Every element earns its pixel. No gradients, no decorative shadows, no glassmorphism.
 
 ## Color Principles
 
-- **Canvas**: Warm paper tone `#fbfaf7` (never harsh pure white `#ffffff` as full-screen canvas, and never dark mode backgrounds).
-- **Surfaces**: Crisp white `#ffffff` cards sitting quietly on `#fbfaf7` canvas with hairline `#e6e3dd` borders.
-- **Single Interactive Color**: Electric Indigo `#4630eb`. Used exclusively for key actions, interactive selections, focused states, and primary CTAs.
-- **Semantic Accents**: Green (`#27865d`), Amber (`#b88635`), and Crimson (`#c93652`) appear strictly to convey actual domain statuses (verified, pending, critical).
-- **No Emojis**: Always use Lucide icons with 1.5px stroke weights.
+- **Canvas**: Pure white `#ffffff`. Not warm, not tinted. Stark and authoritative.
+- **Inset surfaces**: Apple parchment `#f5f5f7` for sunken wells, table backgrounds, sidebar backgrounds.
+- **Single interactive color**: Electric Indigo `#4630eb`. Used only for primary CTAs, active states, links, and focus rings.
+- **Semantic colors**: Green, amber, red appear only to convey factual status (verified, pending, critical).
+- **No decorative color**: No secondary brand color. No gradient. No colored cards.
 
-## Component and Card Rules
+## Routing Principles
 
-1. **Quiet Cards**: Cards are solid `#ffffff` or muted `#f3f1ec` with subtle borders (`border-border`). No heavy drop shadows.
-2. **Telemetry Badges**: Use compact monospace pills for status indicators (`font-mono text-xs uppercase`).
-3. **Buttons**: Primary buttons use `#4630eb` with white text. Secondary buttons use clean bordered surfaces with subtle hover transitions.
-4. **Forms & Input**: Clean inputs with hairline neutral borders that cleanly highlight with an indigo ring on focus.
-5. **No Clutter**: Avoid unnecessary decorative gradients, mesh overlays, or floating neon widgets. Keep every element purposeful.
+- Government review uses dedicated routes (`/government/manage/[id]`), not modals.
+- Problem detail uses a full page route, not an inline expansion.
+- All primary flows navigate to new pages. Modals reserved only for confirmation dialogs.
 
-## Intelligence Workflow Surfaces
+## Component Rules
 
-The interface must support problems of many kinds. Do not assume that every report has a location, severity, evidence, or affected population. Show only relevant fields and use clear empty or not provided states when data does not apply.
-
-Fusion views should make the relationship between reports legible. Show whether reports are exact duplicates, the same systemic problem, related but separate, or unrelated. For repeated nearby reports, show the report count as repeated occurrence evidence, not as a fabricated population number.
-
-Solution memory should appear as a calm evidence panel inside problem review and proposal review. Each result should show relevance, source, verification status, measured outcome when available, and limitations. Student proposals should include a concise section for prior approaches considered, what is being reused, and what is being changed.
-
-AI assisted content must be visually distinct from confirmed records. Use a restrained label such as "AI assisted draft" and provide a nearby human review state. AI suggestions must never look like approval, verification, or measured impact.
+1. Cards: White surface, 12px radius, 1px border. No shadow.
+2. Buttons: Pill radius (rounded-full), 14px text, weight 500.
+3. Tables: Clean data tables for lists. No card grids for data sets.
+4. Status: Compact mono pills with semantic backgrounds.
+5. Icons: Lucide React only. 16px default. 1.5px stroke.

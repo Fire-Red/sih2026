@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { db } from "../lib/db";
-import { users, governmentProfiles, studentProfiles } from "../lib/db/schema";
+import { users, governmentProfiles } from "../lib/db/schema";
 import { eq } from "drizzle-orm";
 
 async function runDatabaseCrudTest() {
@@ -9,7 +9,7 @@ async function runDatabaseCrudTest() {
   console.log("==============================================\n");
 
   const testFirebaseUid = `test_uid_${Date.now()}`;
-  const testEmail = `test.innovator.${Date.now()}@jharkhand.gov.in`;
+  const testEmail = `test.innovator.${Date.now()}@example.gov.in`;
 
   try {
     // 1. CREATE
@@ -19,11 +19,11 @@ async function runDatabaseCrudTest() {
       .values({
         firebaseUid: testFirebaseUid,
         email: testEmail,
-        displayName: "Ranchi District Officer",
+        displayName: "District Officer",
         role: "government",
-        state: "Jharkhand",
-        district: "Ranchi",
-        pinCode: "834001",
+        state: "Maharashtra",
+        district: "Pune",
+        pinCode: "411001",
         isOnboarded: true,
       })
       .returning();

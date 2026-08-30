@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useUserStore } from "@/store/use-user-store";
+import { getValidAuthToken } from "@/lib/auth/session";
 import { Button } from "@/components/ui/button";
 import { 
   Users, 
@@ -49,9 +50,11 @@ export function StudentDashboardView() {
     setError(null);
     let hasError = false;
     try {
+      const token = await getValidAuthToken();
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
       const [teamsRes, appsRes] = await Promise.allSettled([
-        fetch("/api/teams"),
-        fetch("/api/applications"),
+        fetch("/api/teams", { headers }),
+        fetch("/api/applications", { headers }),
       ]);
 
       if (teamsRes.status === "fulfilled" && teamsRes.value.ok) {
@@ -114,9 +117,9 @@ export function StudentDashboardView() {
             </Link>
           </Button>
           <Button asChild size="sm">
-            <Link href="/student/teams">
+            <Link href="/student/submit">
               <Plus className="mr-2 h-4 w-4" />
-              Manage Teams
+              Submit a Pitch
             </Link>
           </Button>
         </div>
@@ -261,7 +264,7 @@ export function StudentDashboardView() {
               <Users className="mx-auto h-6 w-6 text-muted-foreground/50" />
               <p className="mt-2 text-xs text-muted-foreground">You are not part of any team yet.</p>
               <Button asChild variant="outline" size="sm" className="mt-3">
-                <Link href="/student/teams">Create a Team</Link>
+                <Link href="/student/submit">Submit a Pitch</Link>
               </Button>
             </div>
           ) : (

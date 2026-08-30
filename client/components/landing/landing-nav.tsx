@@ -1,52 +1,43 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getSession } from "@/lib/auth/session";
 
 export function LandingNav() {
+  const [hasSession, setHasSession] = useState(false);
+
+  useEffect(() => {
+    setHasSession(Boolean(getSession()?.id));
+  }, []);
+
   return (
-    <header className="fixed top-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
-      <div className="w-full max-w-4xl h-14 rounded-full bg-white/70 backdrop-blur-xl border border-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] px-5 flex items-center justify-between pointer-events-auto transition-all">
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="h-7 w-7 rounded-lg bg-primary text-white flex items-center justify-center font-semibold text-xs shadow-sm shadow-primary/30 group-hover:scale-105 transition-transform">
-            CP
-          </div>
-          <span className="text-sm font-semibold tracking-tight text-foreground">
-            CivicPulse
-          </span>
-        </Link>
-
-        {/* Center Links */}
-        <nav className="hidden md:flex items-center gap-7 text-xs font-medium text-muted-foreground">
-          <Link href="/problems" className="hover:text-foreground transition-colors">
-            Problems
+    <header className="fixed top-0 inset-x-0 z-50 h-14 bg-white border-b border-border flex items-center justify-between px-6">
+      <Link href="/" className="font-semibold tracking-tight text-ink-strong">
+        CivicPulse
+      </Link>
+      <nav className="hidden md:flex items-center gap-6">
+        <Link href="/problems" className="text-[13px] text-ink-caption hover:text-ink-strong">Problems</Link>
+        <Link href="/track" className="text-[13px] text-ink-caption hover:text-ink-strong">Tracker</Link>
+        <Link href="/engine" className="text-[13px] text-ink-caption hover:text-ink-strong">Engine</Link>
+        <Link href="/provenance" className="text-[13px] text-ink-caption hover:text-ink-strong">Provenance</Link>
+      </nav>
+      <div className="flex items-center gap-4">
+        {hasSession ? (
+          <Link href="/dashboard" className="text-[13px] font-medium text-primary hover:text-primary/80">
+            Dashboard
           </Link>
-          <Link href="/track" className="hover:text-foreground transition-colors">
-            Live Tracker
-          </Link>
-          <Link href="/#pipeline" className="hover:text-foreground transition-colors">
-            Intelligence Engine
-          </Link>
-          <Link href="/#provenance" className="hover:text-foreground transition-colors">
-            Data Provenance
-          </Link>
-        </nav>
-
-        {/* Action Controls */}
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/login"
-            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
-          >
+        ) : (
+          <Link href="/login" className="text-[13px] text-ink-caption hover:text-ink-strong">
             Sign in
           </Link>
-          <Link href="/report">
-            <Button size="sm" className="h-8 px-4 rounded-full bg-primary hover:bg-primary-deep text-white font-medium text-xs shadow-sm shadow-primary/25">
-              Report Issue
-            </Button>
-          </Link>
-        </div>
+        )}
+        <Link href="/report">
+          <Button className="rounded-full bg-primary hover:bg-primary/90 text-white h-8 px-4 text-[13px]">
+            Report a problem
+          </Button>
+        </Link>
       </div>
     </header>
   );

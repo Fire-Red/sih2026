@@ -1,26 +1,12 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  display: "swap",
-});
-
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  display: "swap",
-});
-
 export const metadata: Metadata = {
-  title: "CivicPulse — Societal Intelligence & Problem Resolution Platform",
+  title: "CivicPulse",
   description:
-    "A next generation civic infrastructure network turning citizen problem signals into verified multidisciplinary solutions across universities, labs, and enterprise partners.",
+    "A civic intelligence platform turning community problem signals into verified multidisciplinary solutions.",
 };
 
 export default function RootLayout({
@@ -31,9 +17,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${GeistSans.variable} ${GeistMono.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground font-sans selection:bg-foreground selection:text-background">
+      <body className="min-h-full bg-background text-foreground font-sans antialiased">
         {children}
       </body>
     </html>

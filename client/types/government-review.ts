@@ -12,6 +12,7 @@ export interface ReviewProblem {
   maxTeamsAllowed: number;
   appliedTeamsCount: number;
   selectedTeamId: string | null;
+  similarReviewMode?: "manual_review" | "queue_high_confidence";
   sponsoringDepartment?: string | null;
   grantAmount?: string | null;
   createdAt: string;
@@ -66,6 +67,9 @@ export interface SimilarReportMatch {
   status: string;
   similarity: number;
   distanceKm: number | null;
+  createdAt: string | null;
+  confidenceLevel?: "high" | "medium" | "low";
+  reviewMode?: "manual_review" | "queue_high_confidence";
 }
 
 export interface ReviewDetail {
@@ -73,4 +77,23 @@ export interface ReviewDetail {
   evidence: ReviewEvidence[];
   applications: ReviewApplication[];
   events: ReviewEvent[];
+}
+
+export interface SimilarityAlert {
+  relationship: {
+    id: string;
+    reportId: string;
+    relatedReportId: string;
+    semanticSimilarity: string;
+    geographicDistanceKm: string | null;
+    relationshipType: string;
+    confidenceLevel: string;
+    createdAt: string;
+  };
+  relatedReport: {
+    id: string;
+    title: string;
+    district: string | null;
+    createdAt: string;
+  };
 }

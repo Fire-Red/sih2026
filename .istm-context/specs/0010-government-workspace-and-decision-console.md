@@ -30,25 +30,25 @@ The Government Officer acts as the primary validation authority:
 
 ### 3.1 Backend Endpoints (`client/app/api/government/`)
 
-1. `GET /api/government/reports`:
+1. `GET /api/government/reviews`:
    - Returns all citizen-submitted reports along with their evidence attachments (`problem_evidence`), applicant counts, and review statuses.
    - Query filters: `status`, `category`, `district`.
 
-2. `PATCH /api/government/reports/[id]/status`:
+2. `PATCH /api/government/status`:
    - Updates report status (`validated`, `under_review`, `rejected`).
    - Inserts audit entry in review history.
 
-3. `POST /api/government/similar-reports`:
+3. `POST /api/government/similar`:
    - Calls the AI backend embedding and vector distance service to retrieve nearby and semantically similar problem reports.
-   - Payload: `{ reportId: string, text: string, category: string, latitude?: string, longitude?: string }`.
+   - Payload: `{ reportId: string, text: string, category?: string, latitude?: string, longitude?: string }`.
    - Returns: List of matching reports with similarity score and distance in kilometers.
 
-4. `POST /api/government/problem-statements/publish`:
+4. `POST /api/government/publish`:
    - Creates/publishes an official problem statement from one or more reports.
    - Sets `maxTeamsAllowed` (default: 3), `sponsoringDepartment`, `grantAmount`, and required skill tags.
    - Marks merged source reports as `validated`.
 
-5. `POST /api/government/reviews/select-winner`:
+5. `POST /api/government/reviews/[problemId]/select`:
    - Transactionally updates selected application to `selected_winner`, rejects competing proposals, updates problem record with `selectedTeamId`, and creates the `active_projects` entry with default milestone schema.
 
 ### 3.2 AI Backend Service (`server/app/`)
@@ -62,7 +62,7 @@ The Government Officer acts as the primary validation authority:
 
 ## 4. Component Structure (`client/components/government/`)
 
-```
+```text
 components/government/
 ├── government-dashboard-view.tsx       # Executive summary & quick triage stats
 ├── government-review-console.tsx       # Unified master triage and review console
@@ -92,7 +92,7 @@ components/government/
 ## 6. Build Plan
 
 1. **Step 1**: Add FastAPI endpoint `/api/v1/fusion/find-related` for text similarity + geo distance lookup.
-2. **Step 2**: Add Next.js API route handlers in `client/app/api/government/` (`reports`, `status`, `similar-reports`, `publish`).
+2. **Step 2**: Add Next.js API route handlers in `client/app/api/government/` (`reviews`, `status`, `similar`, `publish`, `reviews/[problemId]/select`).
 3. **Step 3**: Implement the `report-evidence-gallery.tsx` and `ai-similar-reports-card.tsx` components.
 4. **Step 4**: Implement the `application-pitch-matrix.tsx` with video embed and PPT preview buttons.
 5. **Step 5**: Update and integrate the unified `government-review-console.tsx` and `government-dashboard-view.tsx`.

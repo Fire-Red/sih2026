@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import type { ChangeEvent, ReactNode } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -26,7 +25,12 @@ const quickTypes = [
 ];
 
 function Field({ label, optional, children }: { label: string; optional?: boolean; children: ReactNode }) {
-  return <label className="block space-y-2 text-sm font-medium text-foreground"><span>{label} {optional && <span className="font-normal text-muted-foreground">Optional</span>}</span>{children}</label>;
+  return (
+    <label className="block space-y-1.5 text-xs font-medium text-neutral-900">
+      <span>{label} {optional && <span className="font-normal text-neutral-400">Optional</span>}</span>
+      {children}
+    </label>
+  );
 }
 
 export function CitizenReportWizard() {
@@ -39,18 +43,172 @@ export function CitizenReportWizard() {
   const [link, setLink] = useState("");
   const [caption, setCaption] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
-  const category = REPORT_CATEGORIES.find((item) => item.id === form.category) ?? REPORT_CATEGORIES[0];
   const update = <K extends keyof ReportForm>(key: K, value: ReportForm[K]) => setForm((current) => ({ ...current, [key]: value }));
   const chooseCategory = (value: string) => { const next = REPORT_CATEGORIES.find((item) => item.id === value) ?? REPORT_CATEGORIES[0]; setForm((current) => ({ ...current, category: value, subcategory: next.subcategories[0] ?? "" })); };
 
   const selectLocation = (latitude: string, longitude: string, address?: string, details?: LocationAddress) => { const name = details?.state_district ?? details?.county ?? details?.city ?? details?.town ?? ""; const district = LOCAL_DISTRICTS.find((item) => name.toLowerCase().includes(item.toLowerCase())) ?? name; setForm((current) => ({ ...current, latitude, longitude, state: details?.state ?? current.state, district: district || current.district, blockOrPanchayat: details?.village ?? details?.suburb ?? current.blockOrPanchayat, pinCode: details?.postcode ?? current.pinCode, formattedAddress: address ?? current.formattedAddress })); };
-  const addLink = () => { if (!link.trim()) return; update("evidence", [...form.evidence, { mediaUrl: link.trim(), caption: caption.trim() || "Supporting evidence", mediaType: "link" }]); setLink(""); setCaption(""); };
+
+  const addLink = () => {
+    const trimmed = link.trim();
+    if (!trimmed) return;
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        setError("Please enter a valid web link starting with http:// or https://");
+        return;
+      }
+    } catch {
+      setError("Please enter a valid web link starting with http:// or https://");
+      return;
+    }
+    setError("");
+    update("evidence", [
+      ...form.evidence,
+      { mediaUrl: trimmed, caption: caption.trim() || "Supporting evidence", mediaType: "link" },
+    ]);
+    setLink("");
+    setCaption("");
+  };
   const upload = async (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; event.target.value = ""; if (!file) return; if (file.size > 5 * 1024 * 1024) { setError("Choose a file smaller than 5 MB."); return; } setUploading(true); setError(""); try { const authResponse = await fetch("/api/uploads/imagekit-auth"); const auth = (await authResponse.json()) as UploadAuth; if (!authResponse.ok || !auth.success || !auth.token || !auth.expire || !auth.signature || !auth.publicKey) throw new Error(auth.error ?? "File uploads are not configured yet."); const body = new FormData(); body.append("file", file); body.append("fileName", file.name); body.append("folder", "/civicpulse/evidence"); body.append("publicKey", auth.publicKey); body.append("token", auth.token); body.append("expire", String(auth.expire)); body.append("signature", auth.signature); const response = await fetch("https://upload.imagekit.io/api/v1/files/upload", { method: "POST", body }); const result = (await response.json()) as UploadResult; if (!response.ok || !result.url) throw new Error(result.message ?? "We could not upload that file."); update("evidence", [...form.evidence, { mediaUrl: result.url, caption: caption.trim() || result.name || file.name, mediaType: result.fileType || file.type || "file" }]); setCaption(""); } catch (uploadError: unknown) { setError(uploadError instanceof Error ? uploadError.message : "We could not upload that file."); } finally { setUploading(false); } };
-  const submit = async () => { if (!form.title.trim() || !form.description.trim()) { setError("Add a title and tell us what happened."); return; } setSubmitting(true); setError(""); try { const session = getSession(); const response = await fetch("/api/reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reporterId: user?.id || session?.id || null, ...form, state: form.state || undefined, severity: form.severity || undefined, affectedPopulationEstimate: form.affectedPopulationEstimate || undefined }) }); const result = (await response.json()) as { success?: boolean; error?: string; report?: { id: string } }; if (!response.ok || !result.success || !result.report) throw new Error(result.error ?? "Unable to submit report."); setSuccess(result.report.id); } catch (submitError: unknown) { setError(submitError instanceof Error ? submitError.message : "Unable to submit report."); } finally { setSubmitting(false); } };
+  const submit = async () => { if (!form.title.trim() || !form.description.trim()) { setError("Add a title and description of the issue."); return; } setSubmitting(true); setError(""); try { const session = getSession(); const response = await fetch("/api/reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reporterId: user?.id || session?.id || null, ...form, state: form.state || undefined, severity: form.severity || undefined, affectedPopulationEstimate: form.affectedPopulationEstimate || undefined }) }); const result = (await response.json()) as { success?: boolean; error?: string; report?: { id: string } }; if (!response.ok || !result.success || !result.report) throw new Error(result.error ?? "Unable to submit report."); setSuccess(result.report.id); } catch (submitError: unknown) { setError(submitError instanceof Error ? submitError.message : "Unable to submit report."); } finally { setSubmitting(false); } };
 
-  if (success) return <div className="mx-auto max-w-3xl py-12"><div className="rounded-2xl border border-border bg-card p-8 text-center sm:p-12"><CheckCircle2 className="mx-auto h-12 w-12 text-semantic-up" /><p className="mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-semantic-up">Report submitted</p><h1 className="mt-3 text-3xl font-medium tracking-[-0.05em]">Thank you for sharing this.</h1><p className="mx-auto mt-4 max-w-md text-sm leading-7 text-muted-foreground">Your report is waiting for review. Follow what happens next from your activity page.</p><p className="mt-5 font-mono text-xs text-muted-foreground">Reference {success}</p><div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"><Button onClick={() => router.push("/activity")}>View activity</Button><Button variant="outline" onClick={() => window.location.reload()}>Report another problem</Button></div></div></div>;
+  if (success) {
+    return (
+      <div className="mx-auto max-w-xl py-16 text-center space-y-4">
+        <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />
+        <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">Report submitted</h1>
+        <p className="text-xs text-neutral-500 max-w-sm mx-auto leading-relaxed">
+          Your report is in queue for official review. Follow progress from your activity feed.
+        </p>
+        <p className="text-xs font-mono text-neutral-400">Reference #{success.slice(0, 8)}</p>
+        <div className="pt-4 flex justify-center gap-3">
+          <Button onClick={() => router.push("/activity")} className="bg-neutral-900 text-white">View activity</Button>
+          <Button variant="outline" onClick={() => window.location.reload()}>Report another</Button>
+        </div>
+      </div>
+    );
+  }
 
-  return <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8 lg:py-12"><div className="grid overflow-hidden rounded-3xl border border-border bg-card lg:grid-cols-[0.82fr_1.18fr]"><aside className="relative hidden min-h-[760px] overflow-hidden bg-foreground lg:block"><Image src="/report-context.png" alt="A rural road after rain" fill priority sizes="40vw" className="object-cover opacity-80" /><div className="absolute inset-0 bg-foreground/35" /><div className="relative z-10 flex h-full flex-col justify-between p-8 text-background"><div><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-background/70">A clear report starts here</p><h1 className="mt-5 max-w-sm text-4xl font-medium leading-[1.05] tracking-[-0.05em]">Say what you saw. We will help with the rest.</h1></div><p className="max-w-xs text-sm leading-6 text-background/75">You do not need technical language, a perfect location, or supporting evidence to begin.</p></div></aside><main className="p-5 sm:p-8 lg:p-10">{error && <div role="alert" className="mb-7 flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}<header><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">New report</p><h2 className="mt-2 text-3xl font-medium tracking-[-0.05em]">What happened?</h2><p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">Use your own words. Start with the thing that needs attention.</p></header><div className="mt-8 space-y-8"><Section title="Describe the problem"><Field label="Short title"><Input autoFocus value={form.title} onChange={(event) => update("title", event.target.value)} placeholder="The road is broken after the rain" /></Field><Field label="Tell us more"><textarea value={form.description} onChange={(event) => update("description", event.target.value)} rows={4} placeholder="What did you see? When did it start? Who is affected?" className="flex w-full resize-y rounded-xl border border-input bg-background px-4 py-3 text-sm leading-6 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" /></Field></Section><Section title="Help us understand it" hint="Pick the closest match. It does not have to be exact."><div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{quickTypes.map((item) => <button key={item.category} type="button" onClick={() => chooseCategory(item.category)} aria-pressed={form.category === item.category} className={`min-h-16 rounded-xl border px-3 py-3 text-left text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${form.category === item.category ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/40 hover:bg-muted"}`}>{item.label}</button>)}</div><details className="mt-3"><summary className="cursor-pointer text-xs font-medium text-muted-foreground">Show all topics</summary><select value={form.category} onChange={(event) => chooseCategory(event.target.value)} className="mt-3 flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{REPORT_CATEGORIES.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></details><Field label="Specific topic" optional><select value={form.subcategory} onChange={(event) => update("subcategory", event.target.value)} className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{category.subcategories.map((item) => <option key={item}>{item}</option>)}</select></Field></Section><details className="group rounded-xl border border-border"><summary className="cursor-pointer list-none p-4 text-sm font-medium">Add a place <span className="font-normal text-muted-foreground">Optional</span></summary><div className="border-t border-border p-4"><LocationPickerMap latitude={form.latitude} longitude={form.longitude} onLocationSelect={selectLocation} /><div className="mt-5 grid gap-4 sm:grid-cols-2"><Field label="District" optional><select value={form.district} onChange={(event) => update("district", event.target.value)} className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"><option value="">Not provided</option>{LOCAL_DISTRICTS.map((item) => <option key={item}>{item}</option>)}</select></Field><Field label="Nearby place" optional><Input value={form.blockOrPanchayat} onChange={(event) => update("blockOrPanchayat", event.target.value)} placeholder="Village or landmark" /></Field></div></div></details><details className="group rounded-xl border border-border"><summary className="cursor-pointer list-none p-4 text-sm font-medium">Add evidence <span className="font-normal text-muted-foreground">Optional</span></summary><div className="border-t border-border p-4"><label htmlFor="report-evidence" className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-center hover:border-primary/50 focus-within:ring-2 focus-within:ring-ring"><ImagePlus className="h-6 w-6 text-primary" /><span className="mt-2 text-sm font-medium">Add a photo or document</span><span className="mt-1 text-xs text-muted-foreground">Maximum 5 MB</span><input id="report-evidence" type="file" accept="image/*,.pdf,.doc,.docx" onChange={upload} disabled={uploading} className="sr-only" />{uploading && <span className="mt-2 flex items-center gap-2 text-xs text-primary"><Loader2 className="h-3.5 w-3.5 animate-spin" />Uploading</span>}</label><div className="mt-4 flex gap-2"><Input type="url" value={link} onChange={(event) => setLink(event.target.value)} placeholder="Or paste a public link" /><Button type="button" variant="outline" onClick={addLink} disabled={!link.trim()}><Paperclip className="h-4 w-4" /><span className="sr-only sm:not-sr-only sm:ml-2">Add</span></Button></div>{form.evidence.length > 0 && <div className="mt-3 space-y-2">{form.evidence.map((item, index) => <div key={`${item.mediaUrl}-${index}`} className="flex items-center justify-between rounded-lg border border-border p-3"><span className="flex min-w-0 items-center gap-2 text-xs"><FileText className="h-4 w-4 shrink-0 text-primary" /><span className="truncate">{item.caption}</span></span><Button type="button" variant="ghost" size="icon" onClick={() => update("evidence", form.evidence.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove ${item.caption}`}><Trash2 className="h-4 w-4" /></Button></div>)}</div>}</div></details></div><div className="mt-8 flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">You can add more details later.</p><Button type="button" onClick={() => void submit()} disabled={submitting || uploading} className="min-h-11 gap-2 px-5">{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}{submitting ? "Submitting" : "Submit report"}</Button></div></main></div></div>;
+  return (
+    <div className="mx-auto w-full max-w-4xl px-4 py-8">
+      <div className="rounded-2xl border border-neutral-200/80 bg-white p-6 sm:p-10 space-y-8">
+        {error && (
+          <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700">
+            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <header className="border-b border-neutral-100 pb-6">
+          <p className="text-xs font-medium text-neutral-500 mb-1">Citizen intake</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">Report a community issue</h1>
+          <p className="mt-1 text-xs text-neutral-500">Provide clear details. You can update or attach more context later.</p>
+        </header>
+
+        <div className="space-y-6">
+          <Section title="Problem details">
+            <Field label="Title">
+              <Input autoFocus value={form.title} onChange={(e) => update("title", e.target.value)} placeholder="e.g. Broken water pipeline on Main Road" className="h-10 text-xs" />
+            </Field>
+            <Field label="Description">
+              <textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={4} placeholder="Describe what you observed, when it occurred, and who is affected..." className="flex w-full resize-y rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs leading-relaxed text-neutral-900 placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-900" />
+            </Field>
+          </Section>
+
+          <Section title="Category topic">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {quickTypes.map((item) => (
+                <button key={item.category} type="button" onClick={() => chooseCategory(item.category)} className={`rounded-xl border p-3 text-left text-xs font-medium transition-colors ${form.category === item.category ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"}`}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <details className="mt-2 text-xs">
+              <summary className="cursor-pointer text-neutral-500 hover:text-neutral-900">Show all topics</summary>
+              <select value={form.category} onChange={(e) => chooseCategory(e.target.value)} className="mt-2 flex h-9 w-full rounded-lg border border-neutral-200 bg-white px-2.5 text-xs text-neutral-800">
+                {REPORT_CATEGORIES.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            </details>
+          </Section>
+
+          <details className="group rounded-xl border border-neutral-200/80 bg-neutral-50/30">
+            <summary className="cursor-pointer list-none p-4 text-xs font-medium text-neutral-900 flex justify-between items-center">
+              <span>Location context <span className="font-normal text-neutral-400 ml-1">Optional</span></span>
+              <span className="text-neutral-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="border-t border-neutral-200/80 p-4 space-y-4 bg-white rounded-b-xl">
+              <LocationPickerMap latitude={form.latitude} longitude={form.longitude} onLocationSelect={selectLocation} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="District" optional>
+                  <select value={form.district} onChange={(e) => update("district", e.target.value)} className="flex h-9 w-full rounded-lg border border-neutral-200 bg-white px-2.5 text-xs text-neutral-800">
+                    <option value="">Select district</option>
+                    {LOCAL_DISTRICTS.map((item) => <option key={item}>{item}</option>)}
+                  </select>
+                </Field>
+                <Field label="Nearby landmark" optional>
+                  <Input value={form.blockOrPanchayat} onChange={(e) => update("blockOrPanchayat", e.target.value)} placeholder="Village, ward, or landmark" className="h-9 text-xs" />
+                </Field>
+              </div>
+            </div>
+          </details>
+
+          <details className="group rounded-xl border border-neutral-200/80 bg-neutral-50/30">
+            <summary className="cursor-pointer list-none p-4 text-xs font-medium text-neutral-900 flex justify-between items-center">
+              <span>Evidence & attachments <span className="font-normal text-neutral-400 ml-1">Optional</span></span>
+              <span className="text-neutral-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="border-t border-neutral-200/80 p-4 space-y-4 bg-white rounded-b-xl">
+              <label htmlFor="report-evidence" className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-neutral-300 bg-neutral-50/50 p-4 text-center hover:bg-neutral-50 transition-colors">
+                <ImagePlus className="h-5 w-5 text-neutral-500" />
+                <span className="mt-1.5 text-xs font-medium text-neutral-900">Upload photo or document</span>
+                <span className="text-[11px] text-neutral-400">Up to 5 MB (PNG, JPG, PDF)</span>
+                <input id="report-evidence" type="file" accept="image/*,.pdf,.doc,.docx" onChange={upload} disabled={uploading} className="sr-only" />
+                {uploading && <span className="mt-2 flex items-center gap-1.5 text-xs text-neutral-600"><Loader2 className="h-3 w-3 animate-spin" /> Uploading...</span>}
+              </label>
+
+              <div className="flex gap-2">
+                <Input type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="Or paste external document link..." className="h-9 text-xs" />
+                <Button type="button" variant="outline" size="sm" onClick={addLink} disabled={!link.trim()} className="h-9 text-xs">
+                  <Paperclip className="h-3.5 w-3.5 mr-1" /> Add
+                </Button>
+              </div>
+
+              {form.evidence.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  {form.evidence.map((item, index) => (
+                    <div key={`${item.mediaUrl}-${index}`} className="flex items-center justify-between rounded-lg border border-neutral-200 p-2.5 text-xs">
+                      <span className="flex items-center gap-2 truncate pr-2 text-neutral-800">
+                        <FileText className="h-3.5 w-3.5 shrink-0 text-neutral-500" />
+                        <span className="truncate">{item.caption}</span>
+                      </span>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => update("evidence", form.evidence.filter((_, itemIndex) => itemIndex !== index))} className="h-6 w-6">
+                        <Trash2 className="h-3.5 w-3.5 text-neutral-400 hover:text-rose-600" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </details>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-neutral-100 pt-6">
+          <p className="text-xs text-neutral-400">Your report will be publicly tracked.</p>
+          <Button type="button" onClick={() => void submit()} disabled={submitting || uploading} className="bg-neutral-900 text-white hover:bg-neutral-800 gap-1.5">
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {submitting ? "Submitting..." : "Submit report"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) { return <section className="border-t border-border pt-7 first:border-t-0 first:pt-0"><h3 className="text-base font-medium tracking-[-0.02em] text-foreground">{title}</h3>{hint && <p className="mt-1 text-sm leading-6 text-muted-foreground">{hint}</p>}<div className="mt-4 space-y-5">{children}</div></section>; }
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-xs font-semibold text-neutral-900">{title}</h2>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}

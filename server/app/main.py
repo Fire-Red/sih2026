@@ -41,6 +41,13 @@ class FindRelatedRequest(BaseModel):
     longitude: Optional[float] = None
     limit: Optional[int] = 5
 
+class ProcessReportRequest(BaseModel):
+    report_id: str
+    text: str
+    category: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
 @app.get("/")
 def root():
     return {
@@ -87,6 +94,20 @@ def find_related(req: FindRelatedRequest):
         limit=req.limit or 5
     )
     return {"success": True, "results": results}
+
+@app.post("/api/v1/fusion/process-report")
+def process_report(req: ProcessReportRequest):
+    try:
+        results = fusion_service.process_report(
+            report_id=req.report_id,
+            text=req.text,
+            category=req.category,
+            latitude=req.latitude,
+            longitude=req.longitude,
+        )
+        return {"success": True, "results": results}
+    except Exception:
+        return {"success": False, "error": "Report intelligence processing is unavailable."}
 
 if __name__ == "__main__":
     import uvicorn

@@ -17,8 +17,9 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const validStatuses = ["submitted", "under_review", "validated", "rejected"];
-    if (!validStatuses.includes(status)) {
+    const validStatuses = ["submitted", "under_review", "validated", "rejected"] as const;
+    type ReviewStatus = typeof validStatuses[number];
+    if (!validStatuses.includes(status as ReviewStatus)) {
       return NextResponse.json(
         { success: false, error: "Invalid status value." },
         { status: 400 }
@@ -28,7 +29,7 @@ export async function PATCH(request: Request) {
     const [updated] = await db
       .update(problemReports)
       .set({
-        status: status as any,
+        status: status as ReviewStatus,
         updatedAt: new Date(),
       })
       .where(eq(problemReports.id, problemId))

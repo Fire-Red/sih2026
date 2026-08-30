@@ -1,27 +1,24 @@
 import React from "react";
-import { ShieldCheck, Network, Cpu, Database, CheckCircle2 } from "lucide-react";
 
 export function LandingProof() {
   return (
-    <section className="py-12 bg-white border-b border-border">
-      <div className="max-w-5xl mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center divide-y md:divide-y-0 md:divide-x divide-border">
-          <div className="pt-4 md:pt-0 px-4">
-            <div className="text-2xl sm:text-3xl font-mono font-bold text-foreground tnum">100%</div>
-            <div className="text-xs font-medium text-muted-foreground mt-1">Provenance Verification</div>
-          </div>
-          <div className="pt-4 md:pt-0 px-4">
-            <div className="text-2xl sm:text-3xl font-mono font-bold text-primary tnum">3 Teams</div>
-            <div className="text-xs font-medium text-muted-foreground mt-1">Max Quota per Challenge</div>
-          </div>
-          <div className="pt-4 md:pt-0 px-4">
-            <div className="text-2xl sm:text-3xl font-mono font-bold text-foreground tnum">PostGIS</div>
-            <div className="text-xs font-medium text-muted-foreground mt-1">Deterministic Proximity</div>
-          </div>
-          <div className="pt-4 md:pt-0 px-4">
-            <div className="text-2xl sm:text-3xl font-mono font-bold text-foreground tnum">AI Hybrid</div>
-            <div className="text-xs font-medium text-muted-foreground mt-1">Multi Signal Clustering</div>
-          </div>
+    <section className="bg-white border-y border-neutral-200/80 py-10">
+      <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 divide-y md:divide-y-0 md:divide-x divide-neutral-100">
+        <div className="flex flex-col items-center text-center">
+          <span className="text-3xl font-semibold tracking-tight text-neutral-900 mb-1">100%</span>
+          <span className="text-xs text-neutral-500 font-normal">Provenance verified</span>
+        </div>
+        <div className="flex flex-col items-center text-center pt-6 md:pt-0">
+          <span className="text-3xl font-semibold tracking-tight text-neutral-900 mb-1">3 teams</span>
+          <span className="text-xs text-neutral-500 font-normal">Max application quota</span>
+        </div>
+        <div className="flex flex-col items-center text-center pt-6 md:pt-0">
+          <span className="text-3xl font-semibold tracking-tight text-neutral-900 mb-1">PostGIS</span>
+          <span className="text-xs text-neutral-500 font-normal">Spatial distance engine</span>
+        </div>
+        <div className="flex flex-col items-center text-center pt-6 md:pt-0">
+          <span className="text-3xl font-semibold tracking-tight text-neutral-900 mb-1">Hybrid AI</span>
+          <span className="text-xs text-neutral-500 font-normal">Deterministic validation</span>
         </div>
       </div>
     </section>

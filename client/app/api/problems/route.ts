@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { problemReports } from "@/lib/db/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import { requireAuthenticatedUser } from "@/lib/auth/server";
+
+export const PUBLIC_PROBLEM_STATUSES = [
+  "fused_clustered",
+  "validated",
+  "assigned_to_hei",
+  "solution_in_progress",
+  "resolved_deployed",
+] as const;
 
 export async function GET(request: Request) {
   try {
@@ -10,11 +19,44 @@ export async function GET(request: Request) {
     const district = searchParams.get("district");
     const status = searchParams.get("status");
 
+    let isAuthorized = false;
+    try {
+      await requireAuthenticatedUser(request);
+      isAuthorized = true;
+    } catch {
+      isAuthorized = false;
+    }
+
     const filters = [];
-    if (category && category !== "all") filters.push(eq(problemReports.category, category as typeof problemReports.category.enumValues[number]));
-    if (district && district !== "all") filters.push(eq(problemReports.district, district));
-    if (status && status !== "all") filters.push(eq(problemReports.status, status as typeof problemReports.status.enumValues[number]));
-    const problems = await db.select().from(problemReports).where(filters.length ? and(...filters) : undefined).orderBy(desc(problemReports.updatedAt));
+    if (category && category !== "all") {
+      filters.push(eq(problemReports.category, category as typeof problemReports.category.enumValues[number]));
+    }
+    if (district && district !== "all") {
+      filters.push(eq(problemReports.district, district));
+    }
+
+    if (!isAuthorized) {
+      if (status && status !== "all") {
+        if (PUBLIC_PROBLEM_STATUSES.includes(status as typeof PUBLIC_PROBLEM_STATUSES[number])) {
+          filters.push(eq(problemReports.status, status as typeof problemReports.status.enumValues[number]));
+        } else {
+          return NextResponse.json({ success: true, problems: [] });
+        }
+      } else {
+        filters.push(inArray(problemReports.status, [...PUBLIC_PROBLEM_STATUSES]));
+      }
+    } else {
+      if (status && status !== "all") {
+        filters.push(eq(problemReports.status, status as typeof problemReports.status.enumValues[number]));
+      }
+    }
+
+    const problems = await db
+      .select()
+      .from(problemReports)
+      .where(filters.length ? and(...filters) : undefined)
+      .orderBy(desc(problemReports.updatedAt));
+
     return NextResponse.json({ success: true, problems });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to fetch problems";
@@ -32,7 +74,7 @@ export async function POST(request: Request) {
       subcategory,
       severity = "medium",
       affectedPopulationEstimate = 100,
-      state = "Jharkhand",
+      state = "India",
       district,
       blockOrPanchayat,
       pinCode,

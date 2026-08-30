@@ -8,6 +8,7 @@ import {
   pgEnum,
   jsonb,
   uniqueIndex,
+  vector,
 } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("user_role", [
@@ -153,6 +154,31 @@ export const projectStatusEnum = pgEnum("project_status", [
   "blocked",
 ]);
 
+export const verificationStatusEnum = pgEnum("verification_status", [
+  "verified",
+  "needs_review",
+  "unverified",
+  "conflict",
+]);
+
+export const similarReviewModeEnum = pgEnum("similar_review_mode", [
+  "manual_review",
+  "queue_high_confidence",
+]);
+
+export const measurementTypeEnum = pgEnum("measurement_type", [
+  "baseline",
+  "during_pilot",
+  "post_intervention",
+  "follow_up",
+]);
+
+export const impactVerificationTypeEnum = pgEnum("impact_verification_type", [
+  "government",
+  "community",
+  "third_party",
+]);
+
 export const problemReports = pgTable("problem_reports", {
   id: uuid("id").defaultRandom().primaryKey(),
   reporterId: uuid("reporter_id").references(() => users.id, { onDelete: "set null" }),
@@ -162,7 +188,7 @@ export const problemReports = pgTable("problem_reports", {
   subcategory: text("subcategory"),
   severity: reportSeverityEnum("severity").default("medium").notNull(),
   affectedPopulationEstimate: integer("affected_population_estimate").default(100),
-  state: text("state").default("Jharkhand").notNull(),
+  state: text("state").default("India").notNull(),
   district: text("district"),
   blockOrPanchayat: text("block_or_panchayat"),
   pinCode: text("pin_code"),
@@ -176,6 +202,7 @@ export const problemReports = pgTable("problem_reports", {
   sponsoringDepartment: text("sponsoring_department"),
   grantAmount: text("grant_amount"),
   selectedTeamId: uuid("selected_team_id"),
+  similarReviewMode: similarReviewModeEnum("similar_review_mode").default("manual_review").notNull(),
   assignedInstitutionName: text("assigned_institution_name"),
   assignedProjectTitle: text("assigned_project_title"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -192,6 +219,29 @@ export const problemEvidence = pgTable("problem_evidence", {
   caption: text("caption"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const problemEmbeddings = pgTable("problem_embeddings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  problemReportId: uuid("problem_report_id")
+    .references(() => problemReports.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  embedding: vector("embedding", { dimensions: 1024 }).notNull(),
+  modelName: text("model_name").default("mistral-embed").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const problemRelationships = pgTable("problem_relationships", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  reportId: uuid("report_id").references(() => problemReports.id, { onDelete: "cascade" }).notNull(),
+  relatedReportId: uuid("related_report_id").references(() => problemReports.id, { onDelete: "cascade" }).notNull(),
+  semanticSimilarity: text("semantic_similarity").notNull(),
+  geographicDistanceKm: text("geographic_distance_km"),
+  relationshipType: text("relationship_type").notNull(),
+  confidenceLevel: text("confidence_level").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [uniqueIndex("problem_relationships_report_pair_idx").on(table.reportId, table.relatedReportId)]);
 
 export const studentTeams = pgTable("student_teams", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -262,6 +312,115 @@ export const governmentReviewEvents = pgTable("government_review_events", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const reportEndorsements = pgTable("report_endorsements", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  reportId: uuid("report_id")
+    .references(() => problemReports.id, { onDelete: "cascade" })
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [uniqueIndex("report_endorsements_report_user_idx").on(table.reportId, table.userId)]);
+
+export const institutions = pgTable("institutions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  district: text("district"),
+  address: text("address"),
+  pinCode: text("pin_code"),
+  latitude: text("latitude"),
+  longitude: text("longitude"),
+  website: text("website"),
+  sourceUrl: text("source_url"),
+  sourceType: text("source_type"),
+  retrievedAt: timestamp("retrieved_at", { withTimezone: true }),
+  lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
+  verificationStatus: verificationStatusEnum("verification_status").default("unverified").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const institutionCapabilities = pgTable("institution_capabilities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  institutionId: uuid("institution_id")
+    .references(() => institutions.id, { onDelete: "cascade" })
+    .notNull(),
+  capability: text("capability").notNull(),
+  department: text("department"),
+  researchArea: text("research_area"),
+  description: text("description"),
+  sourceUrl: text("source_url"),
+  sourceType: text("source_type"),
+  lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
+  verificationStatus: verificationStatusEnum("verification_status").default("needs_review").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const capabilityRequirements = pgTable("capability_requirements", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  problemId: uuid("problem_id")
+    .references(() => problemReports.id, { onDelete: "cascade" })
+    .notNull(),
+  capability: text("capability").notNull(),
+  priority: text("priority").default("important").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const impactMeasurements = pgTable("impact_measurements", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: uuid("project_id")
+    .references(() => activeProjects.id, { onDelete: "cascade" })
+    .notNull(),
+  measurementType: measurementTypeEnum("measurement_type").notNull(),
+  metricName: text("metric_name").notNull(),
+  metricValue: text("metric_value"),
+  metricUnit: text("metric_unit"),
+  measuredAt: timestamp("measured_at", { withTimezone: true }).defaultNow().notNull(),
+  measuredBy: uuid("measured_by").references(() => users.id, { onDelete: "set null" }),
+  notes: text("notes"),
+  evidenceUrl: text("evidence_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const impactVerifications = pgTable("impact_verifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: uuid("project_id")
+    .references(() => activeProjects.id, { onDelete: "cascade" })
+    .notNull(),
+  verifiedBy: uuid("verified_by")
+    .references(() => users.id, { onDelete: "set null" })
+    .notNull(),
+  verificationType: impactVerificationTypeEnum("verification_type").notNull(),
+  baselineSummary: text("baseline_summary"),
+  outcomeSummary: text("outcome_summary"),
+  isImpactVerified: boolean("is_impact_verified").default(false).notNull(),
+  verificationNotes: text("verification_notes"),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const solutionMemory = pgTable("solution_memory", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: uuid("project_id")
+    .references(() => activeProjects.id, { onDelete: "cascade" })
+    .notNull(),
+  problemId: uuid("problem_id")
+    .references(() => problemReports.id, { onDelete: "cascade" })
+    .notNull(),
+  problemType: text("problem_type").notNull(),
+  approach: text("approach").notNull(),
+  requirements: text("requirements").array(),
+  measuredResults: jsonb("measured_results"),
+  constraints: jsonb("constraints"),
+  verificationStatus: verificationStatusEnum("verification_status").default("needs_review").notNull(),
+  sourceUrl: text("source_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type GovernmentProfile = typeof governmentProfiles.$inferSelect;
@@ -276,6 +435,8 @@ export type ProblemReport = typeof problemReports.$inferSelect;
 export type NewProblemReport = typeof problemReports.$inferInsert;
 export type ProblemEvidence = typeof problemEvidence.$inferSelect;
 export type NewProblemEvidence = typeof problemEvidence.$inferInsert;
+export type ProblemEmbedding = typeof problemEmbeddings.$inferSelect;
+export type ProblemRelationship = typeof problemRelationships.$inferSelect;
 export type StudentTeam = typeof studentTeams.$inferSelect;
 export type NewStudentTeam = typeof studentTeams.$inferInsert;
 export type ProblemApplication = typeof problemApplications.$inferSelect;
@@ -284,3 +445,10 @@ export type GovernmentReviewEvent = typeof governmentReviewEvents.$inferSelect;
 export type NewGovernmentReviewEvent = typeof governmentReviewEvents.$inferInsert;
 export type ActiveProject = typeof activeProjects.$inferSelect;
 export type NewActiveProject = typeof activeProjects.$inferInsert;
+export type ReportEndorsement = typeof reportEndorsements.$inferSelect;
+export type Institution = typeof institutions.$inferSelect;
+export type InstitutionCapability = typeof institutionCapabilities.$inferSelect;
+export type CapabilityRequirement = typeof capabilityRequirements.$inferSelect;
+export type ImpactMeasurement = typeof impactMeasurements.$inferSelect;
+export type ImpactVerification = typeof impactVerifications.$inferSelect;
+export type SolutionMemory = typeof solutionMemory.$inferSelect;

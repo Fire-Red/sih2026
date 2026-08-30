@@ -20,19 +20,34 @@ function ReportProgress({ status }: { status: string }) {
 
 export default function ActivityPage() {
   const session = getSession();
-  const sessionId = session?.id;
+  const sessionToken = session?.token;
   const [reports, setReports] = useState<Report[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(sessionToken));
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!sessionId) return;
-    void fetch(`/api/dashboard/citizen?firebaseUid=${encodeURIComponent(sessionId)}`).then(async (response) => {
-      const data = (await response.json()) as ResponseData;
-      if (!response.ok || !data.success || !data.data) throw new Error(data.error ?? "Unable to load activity.");
-      setReports(data.data.reports);
-    }).catch((loadError: unknown) => setError(loadError instanceof Error ? loadError.message : "Unable to load activity.")).finally(() => setLoading(false));
-  }, [sessionId]);
+    if (!sessionToken) return;
+    let active = true;
+    void fetch("/api/dashboard/citizen", {
+      headers: {
+        Authorization: `Bearer ${sessionToken}`,
+      },
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as ResponseData;
+        if (!response.ok || !data.success || !data.data) throw new Error(data.error ?? "Unable to load activity.");
+        if (active) setReports(data.data.reports);
+      })
+      .catch((loadError: unknown) => {
+        if (active) setError(loadError instanceof Error ? loadError.message : "Unable to load activity.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [sessionToken]);
 
   return <WorkspaceFrame><main className="mx-auto max-w-5xl pb-16"><header className="border-b border-border pb-8"><p className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-primary"><Activity className="h-4 w-4" /> Your activity</p><h1 className="text-3xl font-medium tracking-[-0.05em] text-foreground sm:text-5xl">Follow what happens next.</h1><p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground">See the current state of every report you have shared. A quiet status means the record is still being reviewed.</p></header>
     {loading && <div className="flex items-center gap-3 py-16 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin text-primary" /> Loading your activity</div>}
