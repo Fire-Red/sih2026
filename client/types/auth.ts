@@ -3,7 +3,6 @@ export type UserRole =
   | "student"
   | "government"
   | "institution"
-  | "industry"
   | "admin";
 
 export interface GeoLocationContext {
@@ -39,6 +38,7 @@ export interface InstitutionProfileData {
   aisheCode?: string | null;
   institutionType?: string | null;
   departments?: string[] | null;
+  capabilities?: string[] | null;
   website?: string | null;
   officialEmail?: string | null;
   accreditationStatus?: string | null;

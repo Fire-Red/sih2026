@@ -27,8 +27,6 @@ export function DashboardNav({ session }: DashboardNavProps) {
         return "Student Innovator Hub";
       case "institution":
         return "University / Lab Portal";
-      case "industry":
-        return "Industry CSR Hub";
       case "citizen":
       default:
         return "Citizen Portal";

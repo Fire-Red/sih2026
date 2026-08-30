@@ -44,6 +44,24 @@ interface ReportItem {
   createdAt: string;
 }
 
+async function fetchReportItems(
+  selectedDistrict: string,
+  selectedCategory: string
+): Promise<ReportItem[]> {
+  let url = "/api/reports";
+  const params = new URLSearchParams();
+  if (selectedDistrict !== "all") params.append("district", selectedDistrict);
+  if (selectedCategory !== "all") params.append("category", selectedCategory);
+  if (params.toString()) url += `?${params.toString()}`;
+
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!data.success || !Array.isArray(data.reports)) {
+    throw new Error("Failed to load reports");
+  }
+  return data.reports as ReportItem[];
+}
+
 export function CitizenReportTracker() {
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("submitted");
@@ -54,29 +72,24 @@ export function CitizenReportTracker() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [endorsingIds, setEndorsingIds] = useState<Record<string, boolean>>({});
 
-  const fetchReports = async () => {
-    try {
-      let url = "/api/reports";
-      const params = new URLSearchParams();
-      if (selectedDistrict !== "all") params.append("district", selectedDistrict);
-      if (selectedCategory !== "all") params.append("category", selectedCategory);
-      if (params.toString()) url += `?${params.toString()}`;
-
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.success) {
-        setReports(data.reports);
-      }
-    } catch (err) {
-      console.error("Error loading reports:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchReports();
-  }, [selectedDistrict, selectedCategory]);
+    let active = true;
+
+    void fetchReportItems(selectedDistrict, selectedCategory)
+      .then((nextReports) => {
+        if (active) setReports(nextReports);
+      })
+      .catch((err: unknown) => {
+        console.error("Error loading reports:", err);
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedCategory, selectedDistrict]);
 
   const handleEndorse = async (id: string) => {
     if (endorsingIds[id]) return;

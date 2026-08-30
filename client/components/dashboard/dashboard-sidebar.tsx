@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  Gavel,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -35,6 +36,7 @@ const navigation: NavigationItem[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Problems", href: "/problems", icon: Network },
   { label: "Report an issue", href: "/report", icon: FileText },
+  { label: "Review proposals", href: "/government/manage", icon: Gavel, roles: ["government"] },
   { label: "Activity", href: "/track", icon: Activity, roles: ["citizen"] },
 ];
 

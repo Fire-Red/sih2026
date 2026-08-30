@@ -1,6 +1,10 @@
 # CivicPulse Platform Implementation Progress
 
 ## Completed Deliverables
+- [x] Updated report evidence presentation on 2026 08 29:
+  - ImageKit hosted images now render as previews instead of exposing long storage URLs.
+  - Documents show a clear attachment label, with an explicit open action when needed.
+  - TypeScript and focused ESLint checks pass for the changed report flow.
 - [x] Refactored authentication, onboarding, and dashboard user experience:
   - Login and registration now use focused centered forms.
   - Onboarding now uses a clearer, lower density step layout.
@@ -39,6 +43,14 @@
   - **LandingFooter** ([`landing-footer.tsx`](file:///workspaces/web/client/components/landing/landing-footer.tsx)): Structured directory footer with accreditation notices.
 
 ## Current Sprint Deliverables
+- [x] Improved citizen report intake usability and evidence handling:
+  - Added place search to the map so reporters can set the location anywhere by town, landmark, or PIN code.
+  - Kept browser location detection and direct map pin placement, with map recentering after search or GPS selection.
+  - Reverse geocoding now fills available state, district, local area, and PIN fields after a selection.
+  - Switched map tiles from CARTO to standard OpenStreetMap tiles so the prototype does not depend on a map provider API key.
+  - Replaced raw hosted media URLs in the evidence list with image previews and human readable open actions.
+  - Added a server signed ImageKit upload route and changed evidence uploads from temporary data strings to hosted media URLs.
+  - Added ImageKit environment variables to the frontend example configuration without exposing the private key to the browser.
 - [x] Initialized FastAPI AI Backend (`/server`) with `uv` virtual environment:
   - Created `requirements.txt` with FastAPI, Uvicorn, LangChain, `langchain-mistralai`, Mistral SDK, `psycopg`, and `pgvector`.
   - Implemented `RAGService` with `mistral-embed` (1024-dim) vector similarity search against Neon PostgreSQL pgvector and grounding context synthesis.
@@ -74,5 +86,27 @@
   - Improved `RAGService` with embedding try/catch boundaries, server-side error logging, generic user feedback, and calibrated similarity thresholding (`0.65`).
   - Hardened CORS configuration with trusted origins and secure headers in `server/app/main.py`.
   - Cleared duplicate date headers in `error-memory.md` and synchronous state dispatch in `workspace-frame.tsx`.
-- [ ] Build Government Review & Winner Selection Console (`/government/manage`).
-- [ ] Build Selected Team Active Project Workspace (`/projects/[id]`).
+- [x] Built Government Review & Winner Selection Console (`/government/manage`):
+  - Added government only review queue, problem detail, proposal comparison, accessible selection confirmation, conflict handling, and project link success state.
+  - Added server Firebase token verification boundary, typed review APIs, transactional winner selection, review events, and live schema migration.
+  - Verified targeted lint, TypeScript, and webpack production build. Full behavioral verification remains for `/istm-check` and `/istm-test`.
+- [x] Multi-Role Dashboard Matrix & Leaflet Map Location Picker:
+  - Installed `leaflet`, `react-leaflet`, and `@types/leaflet`.
+  - Implemented `LocationPickerMap` with interactive pin-drop, coordinate detection, and reverse-geocoding.
+  - Updated `CitizenReportWizard` Step 2 with the map pin-drop component.
+  - Created role specific dashboard views for Student, Institution, and Government roles.
+  - Refactored `app/(dashboard)/dashboard/page.tsx` to route users dynamically to their role-specific view.
+- [x] Built Selected Team Active Project Workspace (`/projects/[id]`):
+  - Replaced mocked project content with authenticated database backed project loading.
+  - Added access control for government reviewers and selected team leaders.
+  - Added responsive milestone, source problem, selected team, pilot evidence, loading, and error states.
+  - Verified TypeScript, targeted lint, and webpack production build.
+- [x] Corrected the Government Oversight dashboard:
+  - Uses authenticated review data instead of treating failed requests as zero.
+  - Shows explicit loading, unavailable, empty, and populated states with retry handling.
+  - Removed the unverified service health claim and fixed accessible action links.
+  - Requires the rotated Firebase Admin private key in `FIREBASE_ADMIN_PRIVATE_KEY` for live review data.
+- [x] Simplified MVP User Ecosystem to 4 Primary Roles & Unified Government Queue:
+  - Deprecated and removed the Industry role from active onboarding, navigation, profile settings, and dashboards.
+  - Restricted the active MVP ecosystem to Citizen, Government, University/Lab, and Student.
+  - Updated government review queue query to include all reported community problems and candidate clusters, enabling newly submitted issues to appear immediately in the single government officer workspace.

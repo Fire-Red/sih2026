@@ -19,7 +19,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getSession, setSession } from "@/lib/auth/session";
 import { useUserStore } from "@/store/use-user-store";
-import { UserProfile, UserRole, UserSession } from "@/types/auth";
+import {
+  GovernmentProfileData,
+  InstitutionProfileData,
+  StudentProfileData,
+  UserProfile,
+  UserRole,
+  UserSession,
+} from "@/types/auth";
 
 interface RoleOption {
   role: UserRole;
@@ -53,11 +60,10 @@ const ROLES: RoleOption[] = [
   { role: "student", title: "Student", description: "Find meaningful problems, form a team, and propose an approach.", icon: GraduationCap },
   { role: "government", title: "Government officer", description: "Review public reports, validate problems, and guide solutions.", icon: Landmark },
   { role: "institution", title: "Institution or lab", description: "Share verified capabilities and coordinate people for projects.", icon: Building2 },
-  { role: "industry", title: "Industry partner", description: "Offer expertise, technology, funding, or field support.", icon: BriefcaseBusiness },
 ];
 
 const roleNeedsDetails = (role: UserRole) =>
-  role === "student" || role === "government" || role === "institution" || role === "industry";
+  role === "student" || role === "government" || role === "institution";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -92,6 +98,24 @@ export default function OnboardingPage() {
         if (storedUser.geoContext?.state) setStateRegion(storedUser.geoContext.state);
         if (storedUser.geoContext?.district) setDistrict(storedUser.geoContext.district);
         if (storedUser.geoContext?.pinCode) setPincode(storedUser.geoContext.pinCode);
+        const roleProfile = storedUser.roleProfile;
+        if (storedUser.role === "student" && roleProfile && "department" in roleProfile) {
+          const sProfile = roleProfile as StudentProfileData;
+          setOrganization(sProfile.institutionName || "");
+          setDepartment(sProfile.department || "");
+          setAisheCode(sProfile.aisheCode || "");
+          if (sProfile.skills && Array.isArray(sProfile.skills)) setSkills(sProfile.skills.join(", "));
+        } else if (storedUser.role === "government" && roleProfile && "department" in roleProfile) {
+          const gProfile = roleProfile as GovernmentProfileData;
+          setOrganization(gProfile.department || "");
+          setDesignation(gProfile.designation || "");
+        } else if (storedUser.role === "institution" && roleProfile && "institutionName" in roleProfile) {
+          const iProfile = roleProfile as InstitutionProfileData;
+          setOrganization(iProfile.institutionName || "");
+          if (iProfile.departments && Array.isArray(iProfile.departments)) setDepartment(iProfile.departments.join(", "));
+          setAisheCode(iProfile.aisheCode || "");
+          if (iProfile.capabilities && Array.isArray(iProfile.capabilities)) setSkills(iProfile.capabilities.join(", "));
+        }
       } else {
         setSelectedRole(currentSession.role);
       }
@@ -163,9 +187,7 @@ export default function OnboardingPage() {
       } else if (selectedRole === "student") {
         roleProfileData = { institutionName: organization || "Institution", aisheCode: aisheCode || undefined, department: department || "General", skills: skills.split(",").map((skill) => skill.trim()).filter(Boolean) };
       } else if (selectedRole === "institution") {
-        roleProfileData = { institutionName: organization || "Institution", aisheCode: aisheCode || undefined, departments: department.split(",").map((item) => item.trim()).filter(Boolean) };
-      } else if (selectedRole === "industry") {
-        roleProfileData = { organizationName: organization || "Organization", csrFocus: department || "General partnership", contactPersonDesignation: designation || undefined };
+        roleProfileData = { institutionName: organization || "Institution", aisheCode: aisheCode || undefined, departments: department.split(",").map((item) => item.trim()).filter(Boolean), capabilities: skills.split(",").map((item) => item.trim()).filter(Boolean) };
       }
 
       const { setUser, syncWithBackend } = useUserStore.getState();
@@ -227,6 +249,6 @@ function Field({ label, value, onChange, placeholder }: FieldProps) { return <la
 
 interface ProfileDetailsProps { role: UserRole; organization: string; setOrganization: (value: string) => void; department: string; setDepartment: (value: string) => void; designation: string; setDesignation: (value: string) => void; skills: string; setSkills: (value: string) => void; aisheCode: string; setAisheCode: (value: string) => void }
 function ProfileDetails({ role, organization, setOrganization, department, setDepartment, designation, setDesignation, skills, setSkills, aisheCode, setAisheCode }: ProfileDetailsProps) {
-  const title = role === "student" ? "Tell us what you want to build with" : role === "government" ? "Add your official context" : role === "institution" ? "Introduce your institution" : "Introduce your organization";
-  return <section><h2 className="max-w-lg text-3xl font-medium leading-tight tracking-[-0.045em] text-foreground">{title}</h2><p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">These details help us show the right problems, people, and actions. You can refine them later.</p><div className="mt-8 space-y-5"><Field label={role === "student" ? "Institution name" : role === "government" ? "Department" : role === "institution" ? "Institution or lab name" : "Organization name"} value={organization} onChange={setOrganization} placeholder="Optional" /><div className="grid gap-5 sm:grid-cols-2"><Field label={role === "government" ? "Designation" : "Department or focus"} value={role === "government" ? designation : department} onChange={role === "government" ? setDesignation : setDepartment} placeholder="Optional" />{role !== "government" && <Field label={role === "institution" || role === "student" ? "Directory code" : "Your role"} value={role === "institution" || role === "student" ? aisheCode : designation} onChange={role === "institution" || role === "student" ? setAisheCode : setDesignation} placeholder="Optional" />}</div>{role === "student" && <Field label="Skills, separated by commas" value={skills} onChange={setSkills} placeholder="Optional" />}{role === "institution" && <Field label="Research capabilities" value={skills} onChange={setSkills} placeholder="Optional" />}</div></section>;
+  const title = role === "student" ? "Tell us what you want to build with" : role === "government" ? "Add your official context" : "Introduce your institution";
+  return <section><h2 className="max-w-lg text-3xl font-medium leading-tight tracking-[-0.045em] text-foreground">{title}</h2><p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">These details help us show the right problems, people, and actions. You can refine them later.</p><div className="mt-8 space-y-5"><Field label={role === "student" ? "Institution name" : role === "government" ? "Department" : "Institution or lab name"} value={organization} onChange={setOrganization} placeholder="Optional" /><div className="grid gap-5 sm:grid-cols-2"><Field label={role === "government" ? "Designation" : "Department or focus"} value={role === "government" ? designation : department} onChange={role === "government" ? setDesignation : setDepartment} placeholder="Optional" />{role !== "government" && <Field label="Directory code" value={aisheCode} onChange={setAisheCode} placeholder="Optional" />}</div>{role === "student" && <Field label="Skills, separated by commas" value={skills} onChange={setSkills} placeholder="Optional" />}{role === "institution" && <Field label="Research capabilities" value={skills} onChange={setSkills} placeholder="Optional" />}</div></section>;
 }

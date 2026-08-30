@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const leaderId = searchParams.get("leaderId");
 
-    let query = db.select().from(studentTeams).orderBy(desc(studentTeams.createdAt));
+    const query = db.select().from(studentTeams).orderBy(desc(studentTeams.createdAt));
     const allTeams = await query;
 
     let filtered = allTeams;
