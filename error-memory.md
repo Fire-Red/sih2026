@@ -1,5 +1,23 @@
 # Error Memory
 
+## 2026 08 30
+
+### React effect lint errors blocked the client quality gate
+
+Symptom: ESLint reported state updates triggered synchronously from effects in the workspace shell, report tracker, and student dashboard.
+
+Root cause: Effects called stateful loaders directly, and the workspace shell used an effect only to copy the current session into state.
+
+Verified fix: Initialize the workspace session from the session getter, separate report fetching from report state updates, and keep the student loader scoped to an effect with cancellation handling.
+
+### Production build blocked by Next bundler worker failure
+
+Symptom: `next build` panicked while processing `leaflet/dist/leaflet.css` because a worker could not bind to a port. `next build --webpack` then failed while parsing TypeScript `--showConfig` output.
+
+Root cause: The current execution environment cannot complete Next's bundler worker startup. `tsc --noEmit` passes, so no TypeScript source error was confirmed.
+
+Verified workaround to investigate later: Run the build in a clean local or CI environment, then isolate the Leaflet CSS import if the same Turbopack failure reproduces there.
+
 ## 2026 08 29
 
 ### Report evidence was URL-only
