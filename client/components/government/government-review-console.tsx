@@ -83,17 +83,31 @@ export function GovernmentReviewConsole() {
 
   const confirmSelection = async () => {
     if (!detail || !selectedApplication) return;
+    const completedProblemId = detail.problem.id;
     setSubmitting(true);
     setError(null);
     try {
-      const result = await selectReviewWinner(detail.problem.id, selectedApplication.id, notes.trim());
+      const result = await selectReviewWinner(completedProblemId, selectedApplication.id, notes.trim());
       setSuccessProjectId(result.projectId);
       closeSelection();
-      await loadDetail(detail.problem.id);
-      setQueue((items) => items.filter((item) => item.problem.id !== detail.problem.id));
+      const remaining = queue.filter((item) => item.problem.id !== completedProblemId);
+      setQueue(remaining);
+      if (remaining.length > 0) {
+        await loadDetail(remaining[0].problem.id);
+      } else {
+        setDetail(null);
+      }
     } catch (requestError: unknown) {
       setError(errorMessage(requestError));
-      if (typeof requestError === "object" && requestError !== null && "status" in requestError && requestError.status === 409) await loadDetail(detail.problem.id);
+      if (typeof requestError === "object" && requestError !== null && "status" in requestError && requestError.status === 409) {
+        const remaining = queue.filter((item) => item.problem.id !== completedProblemId);
+        setQueue(remaining);
+        if (remaining.length > 0) {
+          await loadDetail(remaining[0].problem.id);
+        } else {
+          setDetail(null);
+        }
+      }
     } finally {
       setSubmitting(false);
     }

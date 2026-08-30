@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { getSession } from "@/lib/auth/session";
@@ -12,21 +12,15 @@ interface WorkspaceFrameProps {
 
 export function WorkspaceFrame({ children }: WorkspaceFrameProps) {
   const router = useRouter();
-  const [session, setSession] = useState<UserSession | null>(null);
-  const [checked, setChecked] = useState(false);
+  const [session] = useState<UserSession | null>(() => getSession());
 
   useEffect(() => {
-    const currentSession = getSession();
-    if (!currentSession) {
+    if (!session) {
       router.replace("/login");
-      return;
     }
+  }, [router, session]);
 
-    setSession(currentSession);
-    setChecked(true);
-  }, [router]);
-
-  if (!checked || !session) return null;
+  if (!session) return null;
 
   return (
     <div className="min-h-screen bg-background">

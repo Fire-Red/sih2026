@@ -12,7 +12,9 @@ import {
   Video, 
   FileCode, 
   ExternalLink,
-  Plus
+  Plus,
+  RefreshCw,
+  AlertCircle
 } from "lucide-react";
 
 interface TeamSummary {
@@ -40,29 +42,56 @@ export function StudentDashboardView() {
   const [teams, setTeams] = useState<TeamSummary[]>([]);
   const [applications, setApplications] = useState<ApplicationSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadStudentData = async () => {
+    setLoading(true);
+    setError(null);
+    let hasError = false;
+    try {
+      const [teamsRes, appsRes] = await Promise.allSettled([
+        fetch("/api/teams"),
+        fetch("/api/applications"),
+      ]);
+
+      if (teamsRes.status === "fulfilled" && teamsRes.value.ok) {
+        const tData = await teamsRes.value.json();
+        if (tData.success && Array.isArray(tData.teams)) setTeams(tData.teams);
+        else hasError = true;
+      } else {
+        hasError = true;
+      }
+
+      if (appsRes.status === "fulfilled" && appsRes.value.ok) {
+        const aData = await appsRes.value.json();
+        if (aData.success && Array.isArray(aData.applications)) setApplications(aData.applications);
+        else hasError = true;
+      } else {
+        hasError = true;
+      }
+
+      if (hasError) {
+        setError("Unable to load all workspace details. You can retry.");
+      }
+    } catch {
+      setError("Unable to load your student workspace data. Please check your connection.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadStudentData() {
-      try {
-        const [teamsRes, appsRes] = await Promise.all([
-          fetch("/api/teams"),
-          fetch("/api/applications"),
-        ]);
-        if (teamsRes.ok) {
-          const tData = await teamsRes.json();
-          if (tData.success && tData.teams) setTeams(tData.teams);
-        }
-        if (appsRes.ok) {
-          const aData = await appsRes.json();
-          if (aData.success && aData.applications) setApplications(aData.applications);
-        }
-      } catch {
-        // Honest handling, no fabricated fallbacks
-      } finally {
-        setLoading(false);
-      }
-    }
-    void loadStudentData();
+    let active = true;
+
+    const load = async () => {
+      await loadStudentData();
+      if (!active) return;
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (
@@ -92,6 +121,26 @@ export function StudentDashboardView() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-destructive/25 bg-destructive/5 p-4 text-xs text-destructive">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void loadStudentData()}
+            disabled={loading}
+            className="h-8 gap-1.5 text-xs text-destructive hover:text-destructive"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Retry
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="rounded-xl border border-border bg-card p-5">

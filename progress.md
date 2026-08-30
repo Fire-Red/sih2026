@@ -94,7 +94,7 @@
   - Installed `leaflet`, `react-leaflet`, and `@types/leaflet`.
   - Implemented `LocationPickerMap` with interactive pin-drop, coordinate detection, and reverse-geocoding.
   - Updated `CitizenReportWizard` Step 2 with the map pin-drop component.
-  - Created role specific dashboard views for Student, Institution, Government, and Industry roles.
+  - Created role specific dashboard views for Student, Institution, and Government roles.
   - Refactored `app/(dashboard)/dashboard/page.tsx` to route users dynamically to their role-specific view.
 - [x] Built Selected Team Active Project Workspace (`/projects/[id]`):
   - Replaced mocked project content with authenticated database backed project loading.

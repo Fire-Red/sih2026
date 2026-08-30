@@ -57,7 +57,7 @@ export function LandingRoles() {
             Stakeholder portals
           </h2>
           <p className="mt-3 text-base text-muted-foreground font-light leading-relaxed">
-            Role-specific interfaces for community members, government decision makers, academic teams, and industry partners.
+            Role-specific interfaces for community members, government decision makers, academic teams, and institutional partners.
           </p>
         </div>
 

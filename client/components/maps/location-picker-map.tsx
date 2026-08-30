@@ -48,10 +48,13 @@ export function LocationPickerMap({
   const [searchQuery, setSearchQuery] = useState("");
   const [locError, setLocError] = useState<string | null>(null);
 
-  const initialLat = latitude ? parseFloat(latitude) : 23.6102;
-  const initialLng = longitude ? parseFloat(longitude) : 85.2799;
+  const parsedLat = latitude ? parseFloat(latitude) : NaN;
+  const parsedLng = longitude ? parseFloat(longitude) : NaN;
+  const initialLat = Number.isFinite(parsedLat) ? parsedLat : 23.6102;
+  const initialLng = Number.isFinite(parsedLng) ? parsedLng : 85.2799;
 
   const selectCoordinates = async (lat: number, lng: number, fallbackAddress?: string) => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
     const latStr = lat.toFixed(6);
     const lngStr = lng.toFixed(6);
     try {
@@ -150,9 +153,7 @@ export function LocationPickerMap({
           lat={initialLat}
           lng={initialLng}
           onSelect={(lat, lng) => {
-            const latStr = lat.toFixed(6);
-            const lngStr = lng.toFixed(6);
-            selectCoordinates(Number(latStr), Number(lngStr));
+            void selectCoordinates(lat, lng);
           }}
         />
       </div>

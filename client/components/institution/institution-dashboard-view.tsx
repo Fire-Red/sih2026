@@ -30,6 +30,14 @@ export function InstitutionDashboardView() {
             setTeamsCount(data.teams.length);
           }
         }
+        const roleProfile = user?.roleProfile;
+        if (roleProfile && "capabilities" in roleProfile && Array.isArray(roleProfile.capabilities)) {
+          setCapabilitiesCount(roleProfile.capabilities.length);
+        } else if (roleProfile && "departments" in roleProfile && Array.isArray(roleProfile.departments)) {
+          setCapabilitiesCount(roleProfile.departments.length);
+        } else {
+          setCapabilitiesCount(0);
+        }
       } catch {
         // Honest data handling
       } finally {
@@ -37,7 +45,7 @@ export function InstitutionDashboardView() {
       }
     }
     void loadInstitutionData();
-  }, []);
+  }, [user]);
 
   return (
     <div className="space-y-8">

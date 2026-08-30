@@ -19,7 +19,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getSession, setSession } from "@/lib/auth/session";
 import { useUserStore } from "@/store/use-user-store";
-import { UserProfile, UserRole, UserSession } from "@/types/auth";
+import {
+  GovernmentProfileData,
+  InstitutionProfileData,
+  StudentProfileData,
+  UserProfile,
+  UserRole,
+  UserSession,
+} from "@/types/auth";
 
 interface RoleOption {
   role: UserRole;
@@ -91,6 +98,24 @@ export default function OnboardingPage() {
         if (storedUser.geoContext?.state) setStateRegion(storedUser.geoContext.state);
         if (storedUser.geoContext?.district) setDistrict(storedUser.geoContext.district);
         if (storedUser.geoContext?.pinCode) setPincode(storedUser.geoContext.pinCode);
+        const roleProfile = storedUser.roleProfile;
+        if (storedUser.role === "student" && roleProfile && "department" in roleProfile) {
+          const sProfile = roleProfile as StudentProfileData;
+          setOrganization(sProfile.institutionName || "");
+          setDepartment(sProfile.department || "");
+          setAisheCode(sProfile.aisheCode || "");
+          if (sProfile.skills && Array.isArray(sProfile.skills)) setSkills(sProfile.skills.join(", "));
+        } else if (storedUser.role === "government" && roleProfile && "department" in roleProfile) {
+          const gProfile = roleProfile as GovernmentProfileData;
+          setOrganization(gProfile.department || "");
+          setDesignation(gProfile.designation || "");
+        } else if (storedUser.role === "institution" && roleProfile && "institutionName" in roleProfile) {
+          const iProfile = roleProfile as InstitutionProfileData;
+          setOrganization(iProfile.institutionName || "");
+          if (iProfile.departments && Array.isArray(iProfile.departments)) setDepartment(iProfile.departments.join(", "));
+          setAisheCode(iProfile.aisheCode || "");
+          if (iProfile.capabilities && Array.isArray(iProfile.capabilities)) setSkills(iProfile.capabilities.join(", "));
+        }
       } else {
         setSelectedRole(currentSession.role);
       }
@@ -162,7 +187,7 @@ export default function OnboardingPage() {
       } else if (selectedRole === "student") {
         roleProfileData = { institutionName: organization || "Institution", aisheCode: aisheCode || undefined, department: department || "General", skills: skills.split(",").map((skill) => skill.trim()).filter(Boolean) };
       } else if (selectedRole === "institution") {
-        roleProfileData = { institutionName: organization || "Institution", aisheCode: aisheCode || undefined, departments: department.split(",").map((item) => item.trim()).filter(Boolean) };
+        roleProfileData = { institutionName: organization || "Institution", aisheCode: aisheCode || undefined, departments: department.split(",").map((item) => item.trim()).filter(Boolean), capabilities: skills.split(",").map((item) => item.trim()).filter(Boolean) };
       }
 
       const { setUser, syncWithBackend } = useUserStore.getState();

@@ -68,7 +68,8 @@ export async function requireAuthenticatedUser(request: Request): Promise<Authen
     throw new AuthorizationError(403, "Your account is not enabled for this workspace.");
   }
 
-  return user;
+  const normalizedRole = user.role === "industry" ? "citizen" : user.role;
+  return { id: user.id, role: normalizedRole };
 }
 
 export async function requireGovernmentUser(request: Request): Promise<string> {
