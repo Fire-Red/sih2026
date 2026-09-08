@@ -1,165 +1,276 @@
 "use client";
 
-import React, { useState } from "react";
-import { WorkspaceFrame } from "@/components/dashboard/workspace-frame";
-import { ProblemCard, Problem } from "@/components/problems/problem-card";
-import { ApplicationDrawer } from "@/components/problems/application-drawer";
-import { LOCAL_DISTRICTS } from "@/lib/constants/report-categories";
-import { Layers3, Filter, Search } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { Filter, Loader2, Search } from "lucide-react";
+import { LandingNav } from "@/components/landing/landing-nav";
+import { LandingFooter } from "@/components/landing/landing-footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { REPORT_CATEGORIES } from "@/lib/constants/report-categories";
 
-const SEED_PROBLEMS: Problem[] = [
-  {
-    id: "p1",
-    title: "Groundwater contamination and high fluoride concentration in village tube wells",
-    district: "Central district",
-    category: "Water & Sanitation",
-    severity: "critical",
-    reportCount: 14,
-    maxTeams: 3,
-    appliedTeams: 2,
-    sponsoringDept: "Drinking Water and Sanitation Department",
-    summary: "Excessive fluoride concentration (>1.5 mg/L) detected across multiple bore wells, causing dental and skeletal fluorosis in school children.",
-  },
-  {
-    id: "p2",
-    title: "Post harvest storage deficit and cold chain spoilage for perishable produce",
-    district: "East district",
-    category: "Agriculture & Irrigation",
-    severity: "high",
-    reportCount: 9,
-    maxTeams: 3,
-    appliedTeams: 1,
-    sponsoringDept: "Department of Agriculture",
-    summary: "Lack of localized micro cold storage results in 35% tomato and seasonal vegetable spoilage before reaching weekly regional markets.",
-  },
-  {
-    id: "p3",
-    title: "Washed out bridge culvert cutting off primary healthcare transit during monsoons",
-    district: "Hill district",
-    category: "Rural Infrastructure",
-    severity: "high",
-    reportCount: 8,
-    maxTeams: 3,
-    appliedTeams: 3,
-    sponsoringDept: "Rural Development Department",
-    summary: "Seasonal stream swelling washes out unreinforced culvert, isolating 4 panchayats from emergency ambulance routes for 3 months each year.",
-  },
-  {
-    id: "p4",
-    title: "Defunct solar mini-grid battery bank failure in tribal hamlet cluster",
-    district: "Valley district",
-    category: "Energy & Power",
-    severity: "medium",
-    reportCount: 5,
-    maxTeams: 3,
-    appliedTeams: 0,
-    sponsoringDept: "Renewable Energy Development Agency",
-    summary: "Lead-acid battery degradation left 45 households without reliable lighting and micro-irrigation power for over 6 months.",
-  },
-];
+import { getSession } from "@/lib/auth/session";
+
+interface Problem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  severity: "low" | "medium" | "high" | "critical";
+  district: string | null;
+  status: string;
+  endorsementCount: number;
+  appliedTeamsCount: number;
+  maxTeamsAllowed: number;
+  updatedAt: string;
+}
+
+const statusLabels: Record<string, string> = {
+  submitted: "Submitted",
+  under_review: "Under review",
+  fused_clustered: "Clustering",
+  validated: "Validated",
+  assigned_to_hei: "Assigned",
+  solution_in_progress: "In progress",
+  resolved_deployed: "Resolved",
+  rejected: "Closed",
+};
+
+const statusVariant: Record<string, "default" | "secondary" | "success" | "warning" | "destructive" | "outline"> = {
+  submitted: "secondary",
+  under_review: "warning",
+  fused_clustered: "default",
+  validated: "success",
+  assigned_to_hei: "default",
+  solution_in_progress: "default",
+  resolved_deployed: "success",
+  rejected: "destructive",
+};
+
+const categoryName = (value: string) =>
+  REPORT_CATEGORIES.find((item) => item.id === value)?.name ??
+  value.replaceAll("_", " ");
 
 export default function ProblemsPage() {
-  const [problems] = useState<Problem[]>(SEED_PROBLEMS);
-  const [selectedDistrict, setSelectedDistrict] = useState("all");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeProblem, setActiveProblem] = useState<Problem | null>(null);
+  const [problems, setProblems] = useState<Problem[]>([]);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filtered = problems.filter((p) => {
-    if (selectedDistrict !== "all" && p.district !== selectedDistrict) return false;
-    if (selectedCategory !== "all" && p.category !== selectedCategory) return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return (
-        p.title.toLowerCase().includes(q) ||
-        p.summary.toLowerCase().includes(q) ||
-        p.district.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+  useEffect(() => {
+    let active = true;
+    const session = getSession();
+    void fetch("/api/problems", {
+      headers: session?.token ? { Authorization: `Bearer ${session.token}` } : {},
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as {
+          success?: boolean;
+          problems?: Problem[];
+          error?: string;
+        };
+        if (!response.ok || !data.success || !data.problems) {
+          throw new Error(data.error ?? "Unable to load problems.");
+        }
+        if (active) setProblems(data.problems);
+      })
+      .catch((loadError: unknown) => {
+        if (active)
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Unable to load problems."
+          );
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const filteredProblems = useMemo(
+    () =>
+      problems.filter((problem) => {
+        const searchable =
+          `${problem.title} ${problem.description} ${problem.district ?? ""}`.toLowerCase();
+        return (
+          (!query.trim() || searchable.includes(query.toLowerCase())) &&
+          (category === "all" || problem.category === category) &&
+          (status === "all" || problem.status === status)
+        );
+      }),
+    [category, problems, query, status]
+  );
 
   return (
-    <WorkspaceFrame>
-      <div className="mx-auto max-w-5xl px-4 pb-16 text-foreground sm:px-0">
-        <header className="border-b border-border pb-8">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-primary mb-2">
-            <Layers3 className="h-4 w-4" /> Open Problem Statements
-          </div>
-          <h1 className="text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
-            Validated Community Challenges
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground max-w-2xl font-light leading-relaxed">
-            Public directory of government validated systemic problems. Student and research teams can propose field solutions within allocated team quotas.
-          </p>
-        </header>
+    <div className="min-h-screen bg-background flex flex-col font-sans">
+      <LandingNav />
+      <main className="flex-1 pt-14">
+        <div className="mx-auto max-w-6xl px-6 py-8 sm:px-8 lg:py-10">
+          <header className="pb-6 border-b border-neutral-200/80">
+            <p className="text-xs font-medium text-neutral-500 mb-1">
+              Open directory
+            </p>
+            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">
+              Problem statements
+            </h1>
+            <p className="mt-1 text-sm text-neutral-600 max-w-2xl">
+              Browse verified community issues open for research, proposals, and student team applications.
+            </p>
+          </header>
 
-        {/* Filter Bar */}
-        <section className="py-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search problems, keywords, or areas..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-xl border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-              <Filter className="h-3.5 w-3.5" /> Filter:
-            </div>
-            <select
-              value={selectedDistrict}
-              onChange={(e) => setSelectedDistrict(e.target.value)}
-              className="h-10 px-3 rounded-xl border border-border bg-card text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="all">All Districts</option>
-              {LOCAL_DISTRICTS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="h-10 px-3 rounded-xl border border-border bg-card text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="all">All Sectors</option>
-              <option value="Water & Sanitation">Water & Sanitation</option>
-              <option value="Agriculture & Irrigation">Agriculture & Irrigation</option>
-              <option value="Rural Infrastructure">Rural Infrastructure</option>
-              <option value="Energy & Power">Energy & Power</option>
-            </select>
-          </div>
-        </section>
-
-        {/* Problem List */}
-        <section className="space-y-4">
-          {filtered.length === 0 ? (
-            <div className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">
-              <p className="text-sm">No problem statements match the selected criteria.</p>
-            </div>
-          ) : (
-            filtered.map((problem) => (
-              <ProblemCard
-                key={problem.id}
-                problem={problem}
-                onApply={(p) => setActiveProblem(p)}
+          <div className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search problems by keyword or location..."
+                className="pl-9 h-9 text-xs rounded-lg border-neutral-200"
               />
-            ))
-          )}
-        </section>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <select
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+                className="h-9 rounded-lg border border-neutral-200 bg-white px-2.5 text-xs text-neutral-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-900"
+              >
+                <option value="all">All categories</option>
+                {REPORT_CATEGORIES.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+                className="h-9 rounded-lg border border-neutral-200 bg-white px-2.5 text-xs text-neutral-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-900"
+              >
+                <option value="all">All statuses</option>
+                {Object.entries(statusLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-        <ApplicationDrawer
-          problem={activeProblem}
-          onClose={() => setActiveProblem(null)}
-        />
-      </div>
-    </WorkspaceFrame>
+          {loading && (
+            <div className="flex items-center gap-2 py-16 text-xs text-neutral-400 justify-center">
+              <Loader2 className="h-4 w-4 animate-spin text-neutral-900" />
+              Loading problems...
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700">
+              <p>{error}</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.reload()}
+                className="mt-2 h-7 text-xs"
+              >
+                Try again
+              </Button>
+            </div>
+          )}
+
+          {!loading && !error && filteredProblems.length === 0 && (
+            <div className="mt-4 rounded-xl border border-dashed border-neutral-200 p-12 text-center">
+              <Filter className="mx-auto h-5 w-5 text-neutral-400" />
+              <h2 className="mt-3 text-xs font-medium text-neutral-900">
+                No matching problems
+              </h2>
+              <p className="mt-1 text-xs text-neutral-500">
+                Try adjusting search terms or filters.
+              </p>
+              <Link href="/report" className="mt-4 inline-block">
+                <Button type="button" size="sm" className="bg-neutral-900 text-white">
+                  Report issue
+                </Button>
+              </Link>
+            </div>
+          )}
+
+          {!loading && !error && filteredProblems.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs text-neutral-500 pb-1">
+                <span>{filteredProblems.length} problems found</span>
+              </div>
+              <div className="overflow-x-auto rounded-xl border border-neutral-200/80 bg-white">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-neutral-100 bg-neutral-50/50">
+                      <th className="py-2.5 px-4 font-medium text-neutral-500">
+                        Problem statement
+                      </th>
+                      <th className="py-2.5 px-4 font-medium text-neutral-500">
+                        Category
+                      </th>
+                      <th className="hidden py-2.5 px-4 font-medium text-neutral-500 md:table-cell">
+                        District
+                      </th>
+                      <th className="py-2.5 px-4 font-medium text-neutral-500">
+                        Status
+                      </th>
+                      <th className="hidden py-2.5 px-4 font-medium text-neutral-500 lg:table-cell">
+                        Team quota
+                      </th>
+                      <th className="hidden py-2.5 px-4 font-medium text-neutral-500 lg:table-cell">
+                        Updated
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {filteredProblems.map((problem) => (
+                      <tr
+                        key={problem.id}
+                        className="hover:bg-neutral-50 transition-colors cursor-pointer"
+                      >
+                        <td className="py-3 px-4 max-w-xs lg:max-w-md">
+                          <Link
+                            href={`/problems/${problem.id}`}
+                            className="block font-medium text-neutral-900 hover:underline truncate"
+                          >
+                            {problem.title}
+                          </Link>
+                        </td>
+                        <td className="py-3 px-4 text-neutral-600 whitespace-nowrap">
+                          {categoryName(problem.category)}
+                        </td>
+                        <td className="hidden py-3 px-4 text-neutral-600 md:table-cell">
+                          {problem.district || "General"}
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge variant={statusVariant[problem.status] ?? "secondary"}>
+                            {statusLabels[problem.status] ?? problem.status}
+                          </Badge>
+                        </td>
+                        <td className="hidden py-3 px-4 text-neutral-600 lg:table-cell">
+                          {problem.appliedTeamsCount} / {problem.maxTeamsAllowed}
+                        </td>
+                        <td className="hidden py-3 px-4 text-neutral-400 lg:table-cell whitespace-nowrap">
+                          {new Date(problem.updatedAt).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+      <LandingFooter />
+    </div>
   );
 }

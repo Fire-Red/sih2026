@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { problemReports } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import { requireAuthenticatedUser } from "@/lib/auth/server";
+
+export const PUBLIC_PROBLEM_STATUSES = [
+  "fused_clustered",
+  "validated",
+  "assigned_to_hei",
+  "solution_in_progress",
+  "resolved_deployed",
+] as const;
 
 export async function GET(request: Request) {
   try {
@@ -10,20 +19,45 @@ export async function GET(request: Request) {
     const district = searchParams.get("district");
     const status = searchParams.get("status");
 
-    const allProblems = await db.select().from(problemReports).orderBy(desc(problemReports.createdAt));
+    let isAuthorized = false;
+    try {
+      await requireAuthenticatedUser(request);
+      isAuthorized = true;
+    } catch {
+      isAuthorized = false;
+    }
 
-    let filtered = allProblems;
+    const filters = [];
     if (category && category !== "all") {
-      filtered = filtered.filter((p) => p.category === category);
+      filters.push(eq(problemReports.category, category as typeof problemReports.category.enumValues[number]));
     }
     if (district && district !== "all") {
-      filtered = filtered.filter((p) => (p.district ?? "").toLowerCase() === district.toLowerCase());
-    }
-    if (status && status !== "all") {
-      filtered = filtered.filter((p) => p.status === status);
+      filters.push(eq(problemReports.district, district));
     }
 
-    return NextResponse.json({ success: true, problems: filtered });
+    if (!isAuthorized) {
+      if (status && status !== "all") {
+        if (PUBLIC_PROBLEM_STATUSES.includes(status as typeof PUBLIC_PROBLEM_STATUSES[number])) {
+          filters.push(eq(problemReports.status, status as typeof problemReports.status.enumValues[number]));
+        } else {
+          return NextResponse.json({ success: true, problems: [] });
+        }
+      } else {
+        filters.push(inArray(problemReports.status, [...PUBLIC_PROBLEM_STATUSES]));
+      }
+    } else {
+      if (status && status !== "all") {
+        filters.push(eq(problemReports.status, status as typeof problemReports.status.enumValues[number]));
+      }
+    }
+
+    const problems = await db
+      .select()
+      .from(problemReports)
+      .where(filters.length ? and(...filters) : undefined)
+      .orderBy(desc(problemReports.updatedAt));
+
+    return NextResponse.json({ success: true, problems });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to fetch problems";
     return NextResponse.json({ success: false, error: message }, { status: 500 });
@@ -40,7 +74,7 @@ export async function POST(request: Request) {
       subcategory,
       severity = "medium",
       affectedPopulationEstimate = 100,
-      state = "Jharkhand",
+      state = "India",
       district,
       blockOrPanchayat,
       pinCode,

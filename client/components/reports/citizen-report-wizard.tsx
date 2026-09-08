@@ -1,163 +1,214 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
+import type { ChangeEvent, ReactNode } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/store/use-user-store";
-import { getSession } from "@/lib/auth/session";
+import { AlertCircle, CheckCircle2, FileText, ImagePlus, Loader2, Paperclip, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LocationAddress, LocationPickerMap } from "@/components/maps/location-picker-map";
+import { LocationPickerMap, type LocationAddress } from "@/components/maps/location-picker-map";
 import { LOCAL_DISTRICTS, REPORT_CATEGORIES } from "@/lib/constants/report-categories";
-import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Droplets, ExternalLink, FileText, HeartPulse, ImagePlus, Leaf, Lightbulb, Loader2, Paperclip, Sprout, Trash2, Truck, Zap } from "lucide-react";
+import { getSession } from "@/lib/auth/session";
+import { useUserStore } from "@/store/use-user-store";
 
 type Severity = "" | "low" | "medium" | "high" | "critical";
-interface EvidenceItem { mediaUrl: string; caption: string; mediaType: string; }
-interface ImageKitAuth { token: string; expire: number; signature: string; publicKey: string; urlEndpoint: string; }
-interface ImageKitUploadResult { url: string; fileType?: string; name?: string; }
-interface ReportForm {
-  category: string; subcategory: string; title: string; description: string; severity: Severity;
-  affectedPopulationEstimate: string; state: string; district: string; blockOrPanchayat: string;
-  pinCode: string; latitude: string; longitude: string; formattedAddress: string; evidence: EvidenceItem[];
-}
+interface Evidence { mediaUrl: string; caption: string; mediaType: string; }
+interface ReportForm { category: string; subcategory: string; title: string; description: string; severity: Severity; affectedPopulationEstimate: string; state: string; district: string; blockOrPanchayat: string; pinCode: string; latitude: string; longitude: string; formattedAddress: string; evidence: Evidence[]; }
+interface UploadAuth { success?: boolean; error?: string; token?: string; expire?: number; signature?: string; publicKey?: string; }
+interface UploadResult { url?: string; fileType?: string; name?: string; message?: string; }
 
-const steps = ["Issue", "Location", "Evidence", "Review"];
+const quickTypes = [
+  { label: "Road or transport", category: "rural_infrastructure" },
+  { label: "Water or sanitation", category: "water_sanitation" },
+  { label: "Health or education", category: "healthcare_nutrition" },
+  { label: "Something else", category: "other" },
+];
 
-function CategoryIcon({ category }: { category: string }) {
-  const props = { className: "h-4 w-4" };
-  if (category.includes("water")) return <Droplets {...props} />;
-  if (category.includes("agriculture")) return <Sprout {...props} />;
-  if (category.includes("infrastructure")) return <Truck {...props} />;
-  if (category.includes("healthcare")) return <HeartPulse {...props} />;
-  if (category.includes("environment")) return <Leaf {...props} />;
-  if (category.includes("energy")) return <Zap {...props} />;
-  return <FileText {...props} />;
+function Field({ label, optional, children }: { label: string; optional?: boolean; children: ReactNode }) {
+  return (
+    <label className="block space-y-1.5 text-xs font-medium text-neutral-900">
+      <span>{label} {optional && <span className="font-normal text-neutral-400">Optional</span>}</span>
+      {children}
+    </label>
+  );
 }
 
 export function CitizenReportWizard() {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
-  const [step, setStep] = useState(1);
-  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState<ReportForm>({ category: "water_sanitation", subcategory: REPORT_CATEGORIES[0].subcategories[0] ?? "", title: "", description: "", severity: "", affectedPopulationEstimate: "", state: "", district: user?.geoContext?.district ?? "", blockOrPanchayat: "", pinCode: "", latitude: "", longitude: "", formattedAddress: "", evidence: [] });
   const [error, setError] = useState("");
-  const [evidenceUrl, setEvidenceUrl] = useState("");
-  const [evidenceCaption, setEvidenceCaption] = useState("");
-  const [uploadingEvidence, setUploadingEvidence] = useState(false);
-  const [form, setForm] = useState<ReportForm>({
-    category: "water_sanitation", subcategory: REPORT_CATEGORIES[0].subcategories[0] ?? "", title: "", description: "", severity: "", affectedPopulationEstimate: "", state: "", district: user?.geoContext?.district ?? "", blockOrPanchayat: "", pinCode: "", latitude: "", longitude: "", formattedAddress: "", evidence: [],
-  });
-  const activeCategory = REPORT_CATEGORIES.find((item) => item.id === form.category) ?? REPORT_CATEGORIES[0];
-  const update = <K extends keyof ReportForm>(field: K, value: ReportForm[K]) => setForm((current) => ({ ...current, [field]: value }));
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [link, setLink] = useState("");
+  const [caption, setCaption] = useState("");
+  const [success, setSuccess] = useState<string | null>(null);
+  const update = <K extends keyof ReportForm>(key: K, value: ReportForm[K]) => setForm((current) => ({ ...current, [key]: value }));
+  const chooseCategory = (value: string) => { const next = REPORT_CATEGORIES.find((item) => item.id === value) ?? REPORT_CATEGORIES[0]; setForm((current) => ({ ...current, category: value, subcategory: next.subcategories[0] ?? "" })); };
 
-  const handleMapLocationSelect = (lat: string, lng: string, address?: string, locationAddress?: LocationAddress) => {
-    const districtName = locationAddress?.state_district ?? locationAddress?.county ?? locationAddress?.city ?? locationAddress?.town ?? "";
-    const district = LOCAL_DISTRICTS.find((item) => districtName.toLowerCase().includes(item.toLowerCase())) ?? districtName;
-    setForm((current) => ({
-      ...current,
-      latitude: lat,
-      longitude: lng,
-      state: locationAddress?.state ?? current.state,
-      district: district || current.district,
-      blockOrPanchayat: locationAddress?.village ?? locationAddress?.suburb ?? current.blockOrPanchayat,
-      pinCode: locationAddress?.postcode ?? current.pinCode,
-      formattedAddress: address || current.formattedAddress || `Coordinates: ${lat}, ${lng}`,
-    }));
-  };
+  const selectLocation = (latitude: string, longitude: string, address?: string, details?: LocationAddress) => { const name = details?.state_district ?? details?.county ?? details?.city ?? details?.town ?? ""; const district = LOCAL_DISTRICTS.find((item) => name.toLowerCase().includes(item.toLowerCase())) ?? name; setForm((current) => ({ ...current, latitude, longitude, state: details?.state ?? current.state, district: district || current.district, blockOrPanchayat: details?.village ?? details?.suburb ?? current.blockOrPanchayat, pinCode: details?.postcode ?? current.pinCode, formattedAddress: address ?? current.formattedAddress })); };
 
-  const addEvidence = () => {
-    if (!evidenceUrl.trim()) return;
-    update("evidence", [...form.evidence, { mediaUrl: evidenceUrl.trim(), caption: evidenceCaption.trim() || "Supporting evidence", mediaType: "image" }]);
-    setEvidenceUrl(""); setEvidenceCaption("");
-  };
-
-  const addEvidenceFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setError("That file is larger than 5 MB. Choose a smaller image or document.");
-      return;
-    }
-    setUploadingEvidence(true);
-    setError("");
+  const addLink = () => {
+    const trimmed = link.trim();
+    if (!trimmed) return;
     try {
-      const authResponse = await fetch("/api/uploads/imagekit-auth");
-      const authData: { success?: boolean; error?: string } & Partial<ImageKitAuth> = await authResponse.json();
-      if (!authResponse.ok || !authData.success || !authData.token || !authData.expire || !authData.signature || !authData.publicKey || !authData.urlEndpoint) {
-        throw new Error(authData.error ?? "Image uploads are not configured yet.");
+      const parsed = new URL(trimmed);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        setError("Please enter a valid web link starting with http:// or https://");
+        return;
       }
-
-      const uploadBody = new FormData();
-      uploadBody.append("file", file);
-      uploadBody.append("fileName", file.name);
-      uploadBody.append("folder", "/civicpulse/evidence");
-      uploadBody.append("publicKey", authData.publicKey);
-      uploadBody.append("token", authData.token);
-      uploadBody.append("expire", String(authData.expire));
-      uploadBody.append("signature", authData.signature);
-
-      const uploadResponse = await fetch("https://upload.imagekit.io/api/v1/files/upload", { method: "POST", body: uploadBody });
-      const uploadData: ImageKitUploadResult & { message?: string } = await uploadResponse.json();
-      if (!uploadResponse.ok || !uploadData.url) throw new Error(uploadData.message ?? "We could not upload that file.");
-
-      setForm((current) => ({
-        ...current,
-        evidence: [...current.evidence, { mediaUrl: uploadData.url, caption: evidenceCaption.trim() || uploadData.name || file.name, mediaType: uploadData.fileType || file.type || "file" }],
-      }));
-      setEvidenceCaption("");
-    } catch (uploadError: unknown) {
-      setError(uploadError instanceof Error ? uploadError.message : "We could not upload that file. Try again.");
-    } finally {
-      setUploadingEvidence(false);
-    }
-  };
-
-  const submit = async () => {
-    setSubmitting(true); setError("");
-    try {
-      const activeSession = getSession();
-      const currentReporterId = user?.id || activeSession?.id || null;
-      const response = await fetch("/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reporterId: currentReporterId,
-          ...form,
-          state: form.state || undefined,
-          severity: form.severity || undefined,
-          affectedPopulationEstimate: form.affectedPopulationEstimate || undefined,
-        }),
-      });
-      const data: { success?: boolean; error?: string; report?: { id: string } } = await response.json();
-      if (!response.ok || !data.success || !data.report) throw new Error(data.error ?? "Unable to submit report.");
-      router.push(`/track?submitted=${data.report.id}`);
-    } catch (submissionError: unknown) { setError(submissionError instanceof Error ? submissionError.message : "Unable to submit report."); setSubmitting(false); }
-  };
-
-  const next = () => {
-    if (step === 1 && (!form.title.trim() || !form.description.trim())) {
-      setError("Add a short title and describe what is happening.");
-      return;
-    }
-    if (step === 2 && !form.district.trim()) {
-      setError("Please select or specify a district for the report.");
+    } catch {
+      setError("Please enter a valid web link starting with http:// or https://");
       return;
     }
     setError("");
-    setStep((current) => Math.min(4, current + 1));
+    update("evidence", [
+      ...form.evidence,
+      { mediaUrl: trimmed, caption: caption.trim() || "Supporting evidence", mediaType: "link" },
+    ]);
+    setLink("");
+    setCaption("");
   };
+  const upload = async (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; event.target.value = ""; if (!file) return; if (file.size > 5 * 1024 * 1024) { setError("Choose a file smaller than 5 MB."); return; } setUploading(true); setError(""); try { const authResponse = await fetch("/api/uploads/imagekit-auth"); const auth = (await authResponse.json()) as UploadAuth; if (!authResponse.ok || !auth.success || !auth.token || !auth.expire || !auth.signature || !auth.publicKey) throw new Error(auth.error ?? "File uploads are not configured yet."); const body = new FormData(); body.append("file", file); body.append("fileName", file.name); body.append("folder", "/civicpulse/evidence"); body.append("publicKey", auth.publicKey); body.append("token", auth.token); body.append("expire", String(auth.expire)); body.append("signature", auth.signature); const response = await fetch("https://upload.imagekit.io/api/v1/files/upload", { method: "POST", body }); const result = (await response.json()) as UploadResult; if (!response.ok || !result.url) throw new Error(result.message ?? "We could not upload that file."); update("evidence", [...form.evidence, { mediaUrl: result.url, caption: caption.trim() || result.name || file.name, mediaType: result.fileType || file.type || "file" }]); setCaption(""); } catch (uploadError: unknown) { setError(uploadError instanceof Error ? uploadError.message : "We could not upload that file."); } finally { setUploading(false); } };
+  const submit = async () => { if (!form.title.trim() || !form.description.trim()) { setError("Add a title and description of the issue."); return; } setSubmitting(true); setError(""); try { const session = getSession(); const response = await fetch("/api/reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reporterId: user?.id || session?.id || null, ...form, state: form.state || undefined, severity: form.severity || undefined, affectedPopulationEstimate: form.affectedPopulationEstimate || undefined }) }); const result = (await response.json()) as { success?: boolean; error?: string; report?: { id: string } }; if (!response.ok || !result.success || !result.report) throw new Error(result.error ?? "Unable to submit report."); setSuccess(result.report.id); } catch (submitError: unknown) { setError(submitError instanceof Error ? submitError.message : "Unable to submit report."); } finally { setSubmitting(false); } };
 
-  return <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-8 lg:py-12">
-    <header className="mb-8 max-w-2xl"><p className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">New report</p><h1 className="text-3xl font-medium tracking-[-0.05em] text-foreground sm:text-4xl">Tell us what needs attention.</h1><p className="mt-3 text-sm leading-6 text-muted-foreground">Start with the issue. You can add a location and evidence next.</p></header>
-    <div className="grid gap-8 lg:grid-cols-[180px_minmax(0,1fr)]">
-      <nav aria-label="Report progress" className="lg:pt-2"><ol className="grid grid-cols-4 gap-2 lg:block lg:space-y-4">{steps.map((label, index) => { const number = index + 1; return <li key={label} className={`flex items-center gap-2 text-xs ${step >= number ? "text-foreground" : "text-muted-foreground"}`}><span className={`flex h-7 w-7 items-center justify-center rounded-full border text-[11px] ${step > number ? "border-primary bg-primary text-primary-foreground" : step === number ? "border-primary text-primary" : "border-border"}`}>{step > number ? <Check className="h-3.5 w-3.5" /> : number}</span><span className="hidden sm:inline lg:inline">{label}</span></li>; })}</ol></nav>
-      <section className="min-w-0 rounded-2xl border border-border bg-card p-5 sm:p-8">
-        {error && <div role="alert" className="mb-6 flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
-        {step === 1 && <div className="space-y-8"><div><h2 className="text-xl font-medium tracking-[-0.03em] text-foreground">What is the issue?</h2><p className="mt-1 text-sm text-muted-foreground">Choose the closest topic, then explain it in your own words.</p></div><div><p className="mb-3 text-sm font-medium text-foreground">Topic</p><div className="grid gap-2 sm:grid-cols-2">{REPORT_CATEGORIES.map((category) => <button key={category.id} type="button" onClick={() => setForm((current) => ({ ...current, category: category.id, subcategory: category.subcategories[0] ?? "" }))} aria-pressed={form.category === category.id} className={`flex min-h-14 items-center gap-3 rounded-lg border px-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${form.category === category.id ? "border-primary bg-primary/5 text-primary" : "border-border bg-background text-muted-foreground hover:border-foreground/30 hover:bg-muted"}`}><CategoryIcon category={category.id} /><span className="text-sm font-medium">{category.name}</span></button>)}</div></div><div className="grid gap-5 sm:grid-cols-2"><label className="space-y-2 text-sm font-medium text-foreground">Specific topic<select value={form.subcategory} onChange={(event) => update("subcategory", event.target.value)} className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{activeCategory.subcategories.map((item) => <option key={item}>{item}</option>)}</select></label><label className="space-y-2 text-sm font-medium text-foreground">Short title <Input value={form.title} onChange={(event) => update("title", event.target.value)} placeholder="For example, water point is not working" /></label></div><label className="block space-y-2 text-sm font-medium text-foreground">What is happening? <textarea value={form.description} onChange={(event) => update("description", event.target.value)} rows={5} placeholder="Tell us what you noticed, when it started, and who is affected if you know." className="flex w-full resize-y rounded-md border border-input bg-background px-3 py-3 text-sm font-normal leading-6 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" /></label><div className="grid gap-5 sm:grid-cols-2"><label className="space-y-2 text-sm font-medium text-foreground">People affected <span className="font-normal text-muted-foreground">optional</span><Input type="number" min="0" value={form.affectedPopulationEstimate} onChange={(event) => update("affectedPopulationEstimate", event.target.value)} placeholder="Approximate number" /></label><fieldset className="space-y-2"><legend className="text-sm font-medium text-foreground">Urgency <span className="font-normal text-muted-foreground">optional</span></legend><div className="flex flex-wrap gap-2">{(["low", "medium", "high", "critical"] as const).map((level) => <button key={level} type="button" onClick={() => update("severity", form.severity === level ? "" : level)} aria-pressed={form.severity === level} className={`min-h-10 rounded-full border px-4 text-xs capitalize transition-colors ${form.severity === level ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:bg-muted"}`}>{level}</button>)}</div></fieldset></div></div>}
-        {step === 2 && <div className="space-y-7"><div><h2 className="text-xl font-medium tracking-[-0.03em] text-foreground">Where is it happening?</h2><p className="mt-1 text-sm text-muted-foreground">Pinpoint the location on the map and choose your district.</p></div><LocationPickerMap latitude={form.latitude} longitude={form.longitude} onLocationSelect={handleMapLocationSelect} /><div className="grid gap-5 sm:grid-cols-2"><label className="space-y-2 text-sm font-medium text-foreground">State or region <Input value={form.state} onChange={(event) => update("state", event.target.value)} placeholder="Optional" /></label><label className="space-y-2 text-sm font-medium text-foreground">District or local area <span className="text-primary">*</span><select value={form.district} onChange={(event) => update("district", event.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><option value="">Select district</option>{LOCAL_DISTRICTS.map((item) => <option key={item}>{item}</option>)}</select></label><label className="space-y-2 text-sm font-medium text-foreground">Village, block, landmark <Input value={form.blockOrPanchayat} onChange={(event) => update("blockOrPanchayat", event.target.value)} placeholder="Optional" /></label><label className="space-y-2 text-sm font-medium text-foreground">PIN code <Input value={form.pinCode} onChange={(event) => update("pinCode", event.target.value)} placeholder="Optional" /></label></div><label className="space-y-2 text-sm font-medium text-foreground">Address or location note <Input value={form.formattedAddress} onChange={(event) => update("formattedAddress", event.target.value)} placeholder="Optional landmark or address" /></label></div>}
-        {step === 3 && <div className="space-y-7"><div><h2 className="text-xl font-medium tracking-[-0.03em] text-foreground">Add evidence, if you have it.</h2><p className="mt-1 text-sm text-muted-foreground">Add a photo or document from this device, or paste a public link.</p></div><div className="rounded-xl border border-dashed border-border bg-muted/30 p-5 sm:p-6"><label htmlFor="evidence-file" className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-lg border border-border bg-background px-4 text-center transition-colors hover:border-primary/50 hover:bg-primary/5 focus-within:ring-2 focus-within:ring-ring"><ImagePlus className="h-6 w-6 text-primary" /><span className="mt-3 text-sm font-medium text-foreground">Choose a photo or document</span><span className="mt-1 text-xs text-muted-foreground">From your phone, tablet, or computer · 5 MB max</span><input id="evidence-file" type="file" accept="image/*,.pdf,.doc,.docx" onChange={addEvidenceFile} disabled={uploadingEvidence} className="sr-only" />{uploadingEvidence && <span className="mt-2 flex items-center gap-2 text-xs text-primary"><Loader2 className="h-3.5 w-3.5 animate-spin" />Uploading evidence…</span>}</label><div className="my-5 flex items-center gap-3 text-[11px] uppercase tracking-[0.16em] text-muted-foreground"><span className="h-px flex-1 bg-border" />or add a link<span className="h-px flex-1 bg-border" /></div><div className="grid gap-3 sm:grid-cols-[1fr_180px_auto]"><Input type="url" value={evidenceUrl} onChange={(event) => setEvidenceUrl(event.target.value)} placeholder="https://..." aria-label="Evidence link" /><Input value={evidenceCaption} onChange={(event) => setEvidenceCaption(event.target.value)} placeholder="Caption (optional)" aria-label="Evidence caption" /><Button type="button" variant="outline" onClick={addEvidence} disabled={!evidenceUrl.trim()} className="gap-2"><Paperclip className="h-4 w-4" />Add link</Button></div></div>{form.evidence.length > 0 && <div className="space-y-2"><p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Attached evidence</p>{form.evidence.map((item, index) => { const isImage = item.mediaType.startsWith("image/") || item.mediaType === "image"; return <div key={`${item.mediaUrl}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"><div className="flex min-w-0 items-center gap-3">{isImage ? <img src={item.mediaUrl} alt="" className="h-12 w-12 shrink-0 rounded-md object-cover" /> : <FileText className="h-5 w-5 shrink-0 text-primary" />}<div className="min-w-0"><p className="truncate text-sm font-medium text-foreground">{item.caption}</p><p className="text-xs text-muted-foreground">{isImage ? "Image attached" : "Document attached"}</p>{!item.mediaUrl.startsWith("data:") && <a href={item.mediaUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex min-h-8 items-center gap-1 text-xs font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ExternalLink className="h-3 w-3" />Open evidence</a>}</div></div><Button type="button" variant="ghost" size="icon" onClick={() => update("evidence", form.evidence.filter((_, evidenceIndex) => evidenceIndex !== index))} aria-label={`Remove ${item.caption}`}><Trash2 className="h-4 w-4" /></Button></div>; })}</div>}</div>}
-        {step === 4 && <div className="space-y-7"><div><h2 className="text-xl font-medium tracking-[-0.03em] text-foreground">Review before submitting</h2><p className="mt-1 text-sm text-muted-foreground">Your report will enter the review process. Similar reports may be connected later.</p></div><div className="rounded-xl border border-primary/20 bg-primary/5 p-5"><div className="flex items-center gap-2 text-sm font-medium text-primary"><Lightbulb className="h-4 w-4" />AI support is planned for this report</div><div className="mt-4 grid gap-3 sm:grid-cols-3"><div className="rounded-lg bg-background/80 p-3"><p className="text-xs font-medium text-foreground">Find related reports</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Surface possible duplicates and connected problems.</p></div><div className="rounded-lg bg-background/80 p-3"><p className="text-xs font-medium text-foreground">Suggest the right team</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Support department and jurisdiction review.</p></div><div className="rounded-lg bg-background/80 p-3"><p className="text-xs font-medium text-foreground">Find prior solutions</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Bring useful verified approaches into review.</p></div></div><p className="mt-4 text-xs text-primary/80">Automation is not active yet. No decision is made by this preview.</p></div><dl className="divide-y divide-border rounded-xl border border-border"><div className="flex gap-4 p-4"><dt className="w-32 shrink-0 text-xs text-muted-foreground">Topic</dt><dd className="text-sm text-foreground">{activeCategory.name} · {form.subcategory}</dd></div><div className="flex gap-4 p-4"><dt className="w-32 shrink-0 text-xs text-muted-foreground">Issue</dt><dd className="text-sm text-foreground">{form.title}</dd></div><div className="flex gap-4 p-4"><dt className="w-32 shrink-0 text-xs text-muted-foreground">Location</dt><dd className="text-sm text-foreground">{form.district || form.state || form.formattedAddress || "Not provided"}</dd></div><div className="flex gap-4 p-4"><dt className="w-32 shrink-0 text-xs text-muted-foreground">Evidence</dt><dd className="text-sm text-foreground">{form.evidence.length ? `${form.evidence.length} attachment${form.evidence.length === 1 ? "" : "s"}` : "Not provided"}</dd></div></dl></div>}
-        <div className="mt-8 flex items-center justify-between border-t border-border pt-6"><Button type="button" variant="ghost" onClick={() => setStep((current) => Math.max(1, current - 1))} disabled={step === 1 || submitting} className="gap-2"><ArrowLeft className="h-4 w-4" />Back</Button>{step < 4 ? <Button type="button" onClick={next} className="gap-2">Continue<ArrowRight className="h-4 w-4" /></Button> : <Button type="button" onClick={() => void submit()} disabled={submitting} className="gap-2">{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}{submitting ? "Submitting" : "Submit report"}</Button>}</div>
-      </section>
+  if (success) {
+    return (
+      <div className="mx-auto max-w-xl py-16 text-center space-y-4">
+        <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" />
+        <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">Report submitted</h1>
+        <p className="text-xs text-neutral-500 max-w-sm mx-auto leading-relaxed">
+          Your report is in queue for official review. Follow progress from your activity feed.
+        </p>
+        <p className="text-xs font-mono text-neutral-400">Reference #{success.slice(0, 8)}</p>
+        <div className="pt-4 flex justify-center gap-3">
+          <Button onClick={() => router.push("/activity")} className="bg-neutral-900 text-white">View activity</Button>
+          <Button variant="outline" onClick={() => window.location.reload()}>Report another</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-4xl px-4 py-8">
+      <div className="rounded-2xl border border-neutral-200/80 bg-white p-6 sm:p-10 space-y-8">
+        {error && (
+          <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700">
+            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <header className="border-b border-neutral-100 pb-6">
+          <p className="text-xs font-medium text-neutral-500 mb-1">Citizen intake</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">Report a community issue</h1>
+          <p className="mt-1 text-xs text-neutral-500">Provide clear details. You can update or attach more context later.</p>
+        </header>
+
+        <div className="space-y-6">
+          <Section title="Problem details">
+            <Field label="Title">
+              <Input autoFocus value={form.title} onChange={(e) => update("title", e.target.value)} placeholder="e.g. Broken water pipeline on Main Road" className="h-10 text-xs" />
+            </Field>
+            <Field label="Description">
+              <textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={4} placeholder="Describe what you observed, when it occurred, and who is affected..." className="flex w-full resize-y rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs leading-relaxed text-neutral-900 placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-900" />
+            </Field>
+          </Section>
+
+          <Section title="Category topic">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {quickTypes.map((item) => (
+                <button key={item.category} type="button" onClick={() => chooseCategory(item.category)} className={`rounded-xl border p-3 text-left text-xs font-medium transition-colors ${form.category === item.category ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"}`}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <details className="mt-2 text-xs">
+              <summary className="cursor-pointer text-neutral-500 hover:text-neutral-900">Show all topics</summary>
+              <select value={form.category} onChange={(e) => chooseCategory(e.target.value)} className="mt-2 flex h-9 w-full rounded-lg border border-neutral-200 bg-white px-2.5 text-xs text-neutral-800">
+                {REPORT_CATEGORIES.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            </details>
+          </Section>
+
+          <details className="group rounded-xl border border-neutral-200/80 bg-neutral-50/30">
+            <summary className="cursor-pointer list-none p-4 text-xs font-medium text-neutral-900 flex justify-between items-center">
+              <span>Location context <span className="font-normal text-neutral-400 ml-1">Optional</span></span>
+              <span className="text-neutral-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="border-t border-neutral-200/80 p-4 space-y-4 bg-white rounded-b-xl">
+              <LocationPickerMap latitude={form.latitude} longitude={form.longitude} onLocationSelect={selectLocation} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="District" optional>
+                  <select value={form.district} onChange={(e) => update("district", e.target.value)} className="flex h-9 w-full rounded-lg border border-neutral-200 bg-white px-2.5 text-xs text-neutral-800">
+                    <option value="">Select district</option>
+                    {LOCAL_DISTRICTS.map((item) => <option key={item}>{item}</option>)}
+                  </select>
+                </Field>
+                <Field label="Nearby landmark" optional>
+                  <Input value={form.blockOrPanchayat} onChange={(e) => update("blockOrPanchayat", e.target.value)} placeholder="Village, ward, or landmark" className="h-9 text-xs" />
+                </Field>
+              </div>
+            </div>
+          </details>
+
+          <details className="group rounded-xl border border-neutral-200/80 bg-neutral-50/30">
+            <summary className="cursor-pointer list-none p-4 text-xs font-medium text-neutral-900 flex justify-between items-center">
+              <span>Evidence & attachments <span className="font-normal text-neutral-400 ml-1">Optional</span></span>
+              <span className="text-neutral-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="border-t border-neutral-200/80 p-4 space-y-4 bg-white rounded-b-xl">
+              <label htmlFor="report-evidence" className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-neutral-300 bg-neutral-50/50 p-4 text-center hover:bg-neutral-50 transition-colors">
+                <ImagePlus className="h-5 w-5 text-neutral-500" />
+                <span className="mt-1.5 text-xs font-medium text-neutral-900">Upload photo or document</span>
+                <span className="text-[11px] text-neutral-400">Up to 5 MB (PNG, JPG, PDF)</span>
+                <input id="report-evidence" type="file" accept="image/*,.pdf,.doc,.docx" onChange={upload} disabled={uploading} className="sr-only" />
+                {uploading && <span className="mt-2 flex items-center gap-1.5 text-xs text-neutral-600"><Loader2 className="h-3 w-3 animate-spin" /> Uploading...</span>}
+              </label>
+
+              <div className="flex gap-2">
+                <Input type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="Or paste external document link..." className="h-9 text-xs" />
+                <Button type="button" variant="outline" size="sm" onClick={addLink} disabled={!link.trim()} className="h-9 text-xs">
+                  <Paperclip className="h-3.5 w-3.5 mr-1" /> Add
+                </Button>
+              </div>
+
+              {form.evidence.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  {form.evidence.map((item, index) => (
+                    <div key={`${item.mediaUrl}-${index}`} className="flex items-center justify-between rounded-lg border border-neutral-200 p-2.5 text-xs">
+                      <span className="flex items-center gap-2 truncate pr-2 text-neutral-800">
+                        <FileText className="h-3.5 w-3.5 shrink-0 text-neutral-500" />
+                        <span className="truncate">{item.caption}</span>
+                      </span>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => update("evidence", form.evidence.filter((_, itemIndex) => itemIndex !== index))} className="h-6 w-6">
+                        <Trash2 className="h-3.5 w-3.5 text-neutral-400 hover:text-rose-600" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </details>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-neutral-100 pt-6">
+          <p className="text-xs text-neutral-400">Your report will be publicly tracked.</p>
+          <Button type="button" onClick={() => void submit()} disabled={submitting || uploading} className="bg-neutral-900 text-white hover:bg-neutral-800 gap-1.5">
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {submitting ? "Submitting..." : "Submit report"}
+          </Button>
+        </div>
+      </div>
     </div>
-  </div>;
+  );
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-xs font-semibold text-neutral-900">{title}</h2>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   Activity,
-  ChevronLeft,
-  ChevronRight,
   FileText,
   Gavel,
   LayoutDashboard,
@@ -13,177 +13,237 @@ import {
   Network,
   UserRound,
   X,
+  GraduationCap,
+  Building2,
+  FolderKanban,
 } from "lucide-react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { logout } from "@/lib/firebase/auth-service";
 import { Button } from "@/components/ui/button";
-import { UserRole, UserSession } from "@/types/auth";
+import type { UserRole, UserSession } from "@/types/auth";
 
-interface DashboardSidebarProps {
+interface SidebarProps {
   session: UserSession | null;
 }
 
-interface NavigationItem {
+interface NavItem {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
   roles?: UserRole[];
 }
 
-const navigation: NavigationItem[] = [
+const navItems: NavItem[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Problems", href: "/problems", icon: Network },
-  { label: "Report an issue", href: "/report", icon: FileText },
-  { label: "Review proposals", href: "/government/manage", icon: Gavel, roles: ["government"] },
-  { label: "Activity", href: "/track", icon: Activity, roles: ["citizen"] },
+  {
+    label: "Review console",
+    href: "/government/manage",
+    icon: Gavel,
+    roles: ["government", "admin"],
+  },
+  {
+    label: "Report issue",
+    href: "/report",
+    icon: FileText,
+    roles: ["citizen"],
+  },
+  {
+    label: "My activity",
+    href: "/activity",
+    icon: Activity,
+    roles: ["citizen"],
+  },
+  {
+    label: "Teams",
+    href: "/teams",
+    icon: GraduationCap,
+    roles: ["student"],
+  },
+  {
+    label: "Capabilities",
+    href: "/capabilities",
+    icon: Building2,
+    roles: ["institution"],
+  },
+  {
+    label: "Projects",
+    href: "/projects",
+    icon: FolderKanban,
+    roles: ["government", "admin", "student"],
+  },
+  { label: "Problem directory", href: "/problems", icon: Network },
 ];
 
-const panelTransition = {
-  type: "spring" as const,
-  stiffness: 420,
-  damping: 34,
-  mass: 0.7,
-};
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
-export function DashboardSidebar({ session }: DashboardSidebarProps) {
+function getRoleLabel(role: UserRole): string {
+  const labels: Record<UserRole, string> = {
+    citizen: "Citizen",
+    student: "Student",
+    government: "Officer",
+    institution: "Institution",
+    admin: "Admin",
+  };
+  return labels[role] ?? "User";
+}
+
+export function DashboardSidebar({ session }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const reduceMotion = useReducedMotion();
-  const [expanded, setExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const role = session?.role ?? "citizen";
-  const items = navigation.filter(
+
+  const items = navItems.filter(
     (item) => !item.roles || item.roles.includes(role)
   );
-  const transition = reduceMotion
-    ? { type: "tween" as const, duration: 0 }
-    : panelTransition;
 
   useEffect(() => {
-    const handleShortcut = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === "/") {
-        event.preventDefault();
-        setExpanded((current) => !current);
-      }
-    };
-
-    window.addEventListener("keydown", handleShortcut);
-    return () => window.removeEventListener("keydown", handleShortcut);
-  }, []);
+    setMobileOpen(false);
+  }, [pathname]);
 
   const handleLogout = async () => {
     await logout();
     router.push("/login");
   };
 
-  const initials = session?.name
-    ? session.name
-        .split(" ")
-        .map((part) => part[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "U";
-
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === href : pathname.startsWith(href);
 
-  const content = (showLabels: boolean) => (
-    <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center px-3">
+  const initials = session?.name ? getInitials(session.name) : "U";
+
+  if (role === "citizen") {
+    return (
+      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center gap-6 px-5 sm:px-8">
+          <Link
+            href="/dashboard"
+            className="shrink-0 text-sm font-semibold tracking-tight text-foreground"
+          >
+            CivicPulse
+          </Link>
+
+          <nav
+            aria-label="Main navigation"
+            className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-2"
+          >
+            {[
+              { label: "Home", href: "/dashboard" },
+              { label: "Report a problem", href: "/report" },
+              { label: "Track reports", href: "/track" },
+              { label: "Explore problems", href: "/problems" },
+            ].map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`whitespace-nowrap rounded-full px-3 py-2 text-xs transition-colors ${
+                    active
+                      ? "bg-primary/10 font-medium text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="flex shrink-0 items-center gap-2 border-l border-border pl-4">
+            <Link
+              href="/profile"
+              aria-label="Open profile"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+            >
+              {initials}
+            </Link>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              aria-label="Sign out"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" strokeWidth={1.75} />
+            </Button>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  const sidebarContent = (
+    <div className="flex h-full flex-col bg-white">
+      <div className="flex h-14 items-center px-5 border-b border-neutral-100">
         <Link
           href="/dashboard"
-          aria-label="Go to overview"
-          className="flex min-w-0 items-center gap-3 rounded-lg px-2 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex items-center gap-2 text-sm font-semibold tracking-tight text-neutral-900 focus-visible:outline-none"
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-            C
-          </span>
-          {showLabels && (
-            <span className="truncate text-base font-medium tracking-[-0.02em] text-foreground">
-              CivicPulse
-            </span>
-          )}
+          <span>CivicPulse</span>
         </Link>
       </div>
 
-      <nav aria-label="Workspace navigation" className="flex-1 px-3 py-5">
-        <p
-          className={`mb-2 px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground ${
-            showLabels ? "" : "sr-only"
-          }`}
-        >
-          Workspace
-        </p>
-        <div className="space-y-1">
-          {items.map((item) => {
-            const active = isActive(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                aria-current={active ? "page" : undefined}
-                title={showLabels ? undefined : item.label}
-                className={`group flex min-h-10 items-center gap-3 rounded-lg px-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  active
-                    ? "bg-primary/10 font-medium text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                } ${showLabels ? "" : "justify-center"}`}
-              >
-                <Icon className="h-4 w-4 shrink-0" strokeWidth={1.8} />
-                {showLabels && <span className="truncate">{item.label}</span>}
-              </Link>
-            );
-          })}
-        </div>
+      <nav aria-label="Main navigation" className="flex-1 px-3 py-4 space-y-1">
+        {items.map((item) => {
+          const active = isActive(item.href);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              className={`group flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-xs transition-colors ${
+                active
+                  ? "bg-neutral-100 font-medium text-neutral-900"
+                  : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
+              }`}
+            >
+              <Icon className="h-4 w-4 shrink-0 text-neutral-500 group-hover:text-neutral-900" strokeWidth={1.75} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
-      <div className="space-y-2 border-t border-border px-3 py-4">
+      <div className="border-t border-neutral-100 p-3 space-y-1">
         <Link
           href="/profile"
-          title={showLabels ? undefined : "Profile"}
-          className={`flex min-h-10 items-center gap-3 rounded-lg px-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-            showLabels ? "" : "justify-center"
-          }`}
+          className="flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-xs text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
         >
-          <UserRound className="h-4 w-4 shrink-0" strokeWidth={1.8} />
-          {showLabels && <span>Profile</span>}
+          <UserRound className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          <span>Settings</span>
         </Link>
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={handleLogout}
-          title={showLabels ? undefined : "Sign out"}
-          className={`w-full justify-start gap-3 px-2.5 text-muted-foreground hover:text-foreground ${
-            showLabels ? "" : "justify-center"
-          }`}
+          className="w-full justify-start gap-2.5 px-2.5 text-xs text-neutral-500 hover:text-neutral-900 h-8 rounded-lg"
         >
-          <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.8} />
-          {showLabels && <span>Sign out</span>}
+          <LogOut className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          <span>Sign out</span>
         </Button>
-        <div
-          className={`flex items-center gap-3 rounded-lg px-2.5 py-2 ${
-            showLabels ? "" : "justify-center"
-          }`}
-        >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-xs font-medium text-foreground">
+
+        <div className="flex items-center gap-2.5 px-2.5 pt-2 border-t border-neutral-100/80">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[10px] font-medium text-neutral-700">
             {initials}
           </span>
-          {showLabels && (
-            <div className="min-w-0">
-              <p className="truncate text-xs font-medium text-foreground">
-                {session?.name || "Civic User"}
-              </p>
-              <p className="truncate text-[10px] text-muted-foreground">
-                {session?.email || ""}
-              </p>
-            </div>
-          )}
+          <div className="min-w-0">
+            <p className="truncate text-xs font-medium text-neutral-900">
+              {session?.name || "User"}
+            </p>
+            <p className="truncate text-[11px] text-neutral-400">
+              {getRoleLabel(role)}
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -191,101 +251,50 @@ export function DashboardSidebar({ session }: DashboardSidebarProps) {
 
   return (
     <>
-      <div className="fixed left-0 top-0 z-40 hidden h-screen w-16 border-r border-border bg-background lg:block">
-        {content(false)}
-        <AnimatePresence initial={false}>
-          {expanded && (
-            <motion.aside
-              initial={{ opacity: 0, x: -24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -24 }}
-              transition={transition}
-              className="absolute left-0 top-0 h-full w-64 border-r border-border bg-background shadow-xl shadow-foreground/5"
-            >
-              {content(true)}
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon"
-                aria-label="Collapse sidebar"
-                aria-expanded={expanded}
-                onClick={() => setExpanded(false)}
-                className="absolute -right-4 top-5 h-8 w-8 rounded-full bg-background shadow-sm"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </motion.aside>
-          )}
-        </AnimatePresence>
-        {!expanded && (
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            aria-label="Expand sidebar"
-            aria-expanded={expanded}
-            onClick={() => setExpanded(true)}
-            className="absolute -right-4 top-5 h-8 w-8 rounded-full bg-background shadow-sm"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-60 border-r border-neutral-200/80 bg-white lg:block">
+        {sidebarContent}
+      </aside>
 
-      <div className="flex h-14 items-center justify-between border-b border-border bg-background px-4 lg:hidden">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-            C
-          </span>
-          <span className="text-sm font-medium text-foreground">CivicPulse</span>
+      <div className="flex h-12 items-center justify-between border-b border-neutral-200 bg-white px-4 lg:hidden">
+        <Link href="/dashboard" className="text-sm font-semibold tracking-tight text-neutral-900">
+          CivicPulse
         </Link>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          aria-label="Open sidebar"
+          aria-label="Open menu"
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpen(true)}
+          className="h-8 w-8"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-4 w-4" />
         </Button>
       </div>
 
-      <AnimatePresence>
-        {mobileOpen && (
-          <>
-            <motion.button
+      {mobileOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMobileOpen(false)}
+            className="fixed inset-0 z-40 bg-black/20 lg:hidden"
+          />
+          <aside className="fixed inset-y-0 left-0 z-50 w-64 border-r border-neutral-200 bg-white shadow-xl lg:hidden">
+            {sidebarContent}
+            <Button
               type="button"
-              aria-label="Close sidebar"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={transition}
+              variant="ghost"
+              size="icon"
+              aria-label="Close menu"
               onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 z-40 bg-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
-            />
-            <motion.aside
-              initial={{ x: -288 }}
-              animate={{ x: 0 }}
-              exit={{ x: -288 }}
-              transition={transition}
-              className="fixed inset-y-0 left-0 z-50 w-72 border-r border-border bg-background shadow-2xl lg:hidden"
+              className="absolute right-3 top-3 h-8 w-8"
             >
-              {content(true)}
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Close sidebar"
-                onClick={() => setMobileOpen(false)}
-                className="absolute right-3 top-4"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+              <X className="h-4 w-4" />
+            </Button>
+          </aside>
+        </>
+      )}
     </>
   );
 }

@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { problemApplications, problemReports, studentTeams } from "@/lib/db/schema";
 import { eq, desc, and, lt, sql } from "drizzle-orm";
+import { AuthorizationError, requireAuthenticatedUser } from "@/lib/auth/server";
 
 export async function GET(request: Request) {
   try {
+    const currentUser = await requireAuthenticatedUser(request);
     const { searchParams } = new URL(request.url);
     const problemId = searchParams.get("problemId");
     const teamId = searchParams.get("teamId");
@@ -32,21 +34,28 @@ export async function GET(request: Request) {
     }
 
     const applications = await query.orderBy(desc(problemApplications.createdAt));
+    const visibleApplications = currentUser.role === "government" || currentUser.role === "admin"
+      ? applications
+      : applications.filter((row) => row.team?.leaderId === currentUser.id || row.application.applicantUserId === currentUser.id);
 
-    return NextResponse.json({ success: true, applications });
+    return NextResponse.json({ success: true, applications: visibleApplications });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to fetch applications";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    const status = error instanceof AuthorizationError ? error.status : 500;
+    return NextResponse.json({ success: false, error: message }, { status });
   }
 }
 
 export async function POST(request: Request) {
   try {
+    const currentUser = await requireAuthenticatedUser(request);
+    if (currentUser.role !== "student") {
+      throw new AuthorizationError(403, "Student workspace access is required.");
+    }
     const body = await request.json();
     const {
       problemId,
       teamId,
-      applicantUserId,
       pitchSummary,
       videoUrl,
       pptUrl,
@@ -80,6 +89,18 @@ export async function POST(request: Request) {
       }
 
       // Check problem exists
+      const [team] = await tx
+        .select({ id: studentTeams.id, leaderId: studentTeams.leaderId })
+        .from(studentTeams)
+        .where(eq(studentTeams.id, teamId));
+
+      if (!team || team.leaderId !== currentUser.id) {
+        return {
+          status: 403,
+          body: { success: false, error: "You can only submit for a team you lead." },
+        };
+      }
+
       const [problem] = await tx
         .select()
         .from(problemReports)
@@ -123,7 +144,7 @@ export async function POST(request: Request) {
         .values({
           problemId,
           teamId,
-          applicantUserId: applicantUserId || null,
+          applicantUserId: currentUser.id,
           pitchSummary,
           videoUrl: videoUrl || null,
           pptUrl: pptUrl || null,
@@ -141,6 +162,7 @@ export async function POST(request: Request) {
     return NextResponse.json(result.body, { status: result.status });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to submit application";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    const status = error instanceof AuthorizationError ? error.status : 500;
+    return NextResponse.json({ success: false, error: message }, { status });
   }
 }

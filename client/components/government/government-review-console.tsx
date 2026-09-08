@@ -1,49 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, ArrowRight, CheckCircle2, FileText, MapPin, RefreshCw, ShieldCheck } from "lucide-react";
+import { AlertCircle, RefreshCw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getReviewDetail, getReviewQueue, selectReviewWinner } from "@/lib/api/government-review-api";
+import { Badge } from "@/components/ui/badge";
+import { getReviewQueue } from "@/lib/api/government-review-api";
 import { getSession } from "@/lib/auth/session";
-import type { ReviewApplication, ReviewDetail, ReviewQueueItem } from "@/types/government-review";
-import { ReviewProposalCard } from "./review-proposal-card";
+import type { ReviewQueueItem } from "@/types/government-review";
+
+type TabStage = "intake" | "challenges" | "awarded";
 
 function errorMessage(error: unknown): string {
-  if (typeof error === "object" && error !== null && "error" in error && typeof error.error === "string") return error.error;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "error" in error &&
+    typeof error.error === "string"
+  ) {
+    return error.error;
+  }
   return "Something went wrong while loading this review.";
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value));
 }
 
 export function GovernmentReviewConsole() {
   const [queue, setQueue] = useState<ReviewQueueItem[]>([]);
-  const [detail, setDetail] = useState<ReviewDetail | null>(null);
-  const [selectedApplication, setSelectedApplication] = useState<ReviewApplication | null>(null);
-  const [notes, setNotes] = useState("");
+  const [activeTab, setActiveTab] = useState<TabStage>("intake");
   const [loading, setLoading] = useState(true);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [successProjectId, setSuccessProjectId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-
-  const loadDetail = useCallback(async (problemId: string) => {
-    setDetailLoading(true);
-    setError(null);
-    try {
-      setDetail(await getReviewDetail(problemId));
-    } catch (requestError: unknown) {
-      setError(errorMessage(requestError));
-    } finally {
-      setDetailLoading(false);
-    }
-  }, []);
 
   const loadQueue = useCallback(async () => {
     setLoading(true);
@@ -56,85 +41,190 @@ export function GovernmentReviewConsole() {
       }
       const reviews = await getReviewQueue();
       setQueue(reviews);
-      if (reviews[0]) await loadDetail(reviews[0].problem.id);
     } catch (requestError: unknown) {
       setError(errorMessage(requestError));
     } finally {
       setLoading(false);
     }
-  }, [loadDetail]);
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadQueue(), 0);
     return () => window.clearTimeout(timer);
   }, [loadQueue]);
 
-  const openSelection = (application: ReviewApplication) => {
-    setSelectedApplication(application);
-    setNotes("");
-    triggerRef.current = document.activeElement instanceof HTMLButtonElement ? document.activeElement : null;
-    dialogRef.current?.showModal();
-  };
+  const intakeCount = queue.filter(
+    (r) => r.problem.status === "submitted" || r.problem.status === "under_review"
+  ).length;
+  const challengeCount = queue.filter(
+    (r) => r.problem.status === "validated" && !r.problem.selectedTeamId
+  ).length;
+  const awardedCount = queue.filter((r) => Boolean(r.problem.selectedTeamId)).length;
 
-  const closeSelection = () => {
-    dialogRef.current?.close();
-    triggerRef.current?.focus();
-  };
-
-  const confirmSelection = async () => {
-    if (!detail || !selectedApplication) return;
-    const completedProblemId = detail.problem.id;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const result = await selectReviewWinner(completedProblemId, selectedApplication.id, notes.trim());
-      setSuccessProjectId(result.projectId);
-      closeSelection();
-      const remaining = queue.filter((item) => item.problem.id !== completedProblemId);
-      setQueue(remaining);
-      if (remaining.length > 0) {
-        await loadDetail(remaining[0].problem.id);
-      } else {
-        setDetail(null);
-      }
-    } catch (requestError: unknown) {
-      setError(errorMessage(requestError));
-      if (typeof requestError === "object" && requestError !== null && "status" in requestError && requestError.status === 409) {
-        const remaining = queue.filter((item) => item.problem.id !== completedProblemId);
-        setQueue(remaining);
-        if (remaining.length > 0) {
-          await loadDetail(remaining[0].problem.id);
-        } else {
-          setDetail(null);
-        }
-      }
-    } finally {
-      setSubmitting(false);
+  const filteredQueue = queue.filter((item) => {
+    if (activeTab === "intake") {
+      return item.problem.status === "submitted" || item.problem.status === "under_review";
     }
-  };
+    if (activeTab === "challenges") {
+      return item.problem.status === "validated" && !item.problem.selectedTeamId;
+    }
+    if (activeTab === "awarded") {
+      return Boolean(item.problem.selectedTeamId);
+    }
+    return true;
+  });
 
   if (accessDenied) {
-    return <main className="mx-auto flex min-h-[70vh] max-w-2xl items-center px-4 py-12"><Card className="w-full"><CardContent className="space-y-4 p-8 text-center"><ShieldCheck className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h1 className="text-2xl font-medium tracking-[-0.03em]">Government access required</h1><p className="text-base leading-7 text-muted-foreground">Sign in with an authorized government account to review proposals.</p><Link href="/login" className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">Go to sign in</Link></CardContent></Card></main>;
+    return (
+      <main className="mx-auto flex min-h-[50vh] max-w-md items-center px-4 py-12">
+        <div className="w-full text-center space-y-4">
+          <ShieldCheck className="mx-auto h-8 w-8 text-neutral-400" aria-hidden="true" />
+          <h1 className="text-lg font-semibold tracking-tight text-neutral-900">Government access required</h1>
+          <p className="text-xs text-neutral-500">Sign in with an authorized government officer account.</p>
+          <Link href="/login">
+            <Button size="sm" className="bg-neutral-900 text-white">
+              Go to sign in
+            </Button>
+          </Link>
+        </div>
+      </main>
+    );
   }
 
   return (
-    <main id="main-content" className="mx-auto w-full max-w-[96rem] space-y-8 px-4 py-8 sm:px-8 lg:px-12 lg:py-12">
-      <header className="flex flex-col gap-4 border-b border-border pb-7 sm:flex-row sm:items-end sm:justify-between">
-        <div className="max-w-2xl space-y-3"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Decision workspace</p><h1 className="text-3xl font-medium tracking-[-0.04em] text-foreground sm:text-4xl">Review proposals</h1><p className="text-base leading-7 text-muted-foreground">Compare the submitted approaches, review their evidence, and move one validated problem into delivery.</p></div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground"><span className="h-2 w-2 rounded-full bg-semantic-up" aria-hidden="true" />{queue.length} waiting for review</div>
-      </header>
+    <main className="w-full space-y-8">
+      <div className="flex flex-col gap-4 border-b border-neutral-200/80 pb-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-medium text-neutral-500 mb-1">
+            Department review
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">
+            Review console
+          </h1>
+          <p className="text-sm text-neutral-600 mt-1">
+            Triage incoming reports, launch challenges, and evaluate student pitches.
+          </p>
+        </div>
 
-      {error && <div role="alert" className="flex items-start gap-3 rounded-lg border border-destructive/25 bg-destructive/5 p-4 text-sm text-destructive"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><div className="flex-1">{error}</div><Button type="button" variant="outline" size="sm" onClick={() => void loadQueue()}><RefreshCw className="mr-2 h-3.5 w-3.5" aria-hidden="true" />Retry</Button></div>}
+        <div className="flex items-center gap-1 bg-neutral-100 p-1 rounded-full text-xs">
+          <button
+            type="button"
+            onClick={() => setActiveTab("intake")}
+            className={`px-3.5 py-1.5 font-medium rounded-full transition-colors ${
+              activeTab === "intake"
+                ? "bg-white text-neutral-900 shadow-sm"
+                : "text-neutral-600 hover:text-neutral-900"
+            }`}
+          >
+            Intake ({intakeCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("challenges")}
+            className={`px-3.5 py-1.5 font-medium rounded-full transition-colors ${
+              activeTab === "challenges"
+                ? "bg-white text-neutral-900 shadow-sm"
+                : "text-neutral-600 hover:text-neutral-900"
+            }`}
+          >
+            Challenges ({challengeCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("awarded")}
+            className={`px-3.5 py-1.5 font-medium rounded-full transition-colors ${
+              activeTab === "awarded"
+                ? "bg-white text-neutral-900 shadow-sm"
+                : "text-neutral-600 hover:text-neutral-900"
+            }`}
+          >
+            Awarded ({awardedCount})
+          </button>
+        </div>
+      </div>
 
-      {loading ? <div role="status" className="rounded-lg border border-border bg-card p-8 text-base text-muted-foreground">Loading proposals…</div> : queue.length === 0 && !detail ? <Card><CardContent className="space-y-3 p-12 text-center"><CheckCircle2 className="mx-auto h-8 w-8 text-semantic-up" aria-hidden="true" /><h2 className="text-xl font-medium">The review queue is clear</h2><p className="text-base text-muted-foreground">New submissions will appear here when they are ready for review.</p></CardContent></Card> : <div className="grid gap-8 lg:grid-cols-[18rem_minmax(0,1fr)]">
-        <aside aria-label="Problems awaiting review" className="space-y-3"><div className="flex items-center justify-between"><h2 className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Problems</h2><span className="font-mono text-xs text-muted-foreground">{queue.length}</span></div><ul className="space-y-2">{queue.map((item) => <li key={item.problem.id}><button type="button" className={`w-full rounded-lg border p-4 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${detail?.problem.id === item.problem.id ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-muted"}`} onClick={() => void loadDetail(item.problem.id)}><span className="block truncate text-sm font-medium text-foreground">{item.problem.title}</span><span className="mt-2 block text-xs capitalize text-muted-foreground">{item.problem.category.replaceAll("_", " ")}</span><span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{item.pendingApplicationCount} pending</span></button></li>)}</ul></aside>
-        <section aria-live="polite" className="min-w-0 space-y-6">{detailLoading || !detail ? <div role="status" className="rounded-lg border border-border bg-card p-8 text-base text-muted-foreground">Loading review details…</div> : <><Card><CardHeader className="gap-4 border-b border-border p-6"><div className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"><span>{detail.problem.category.replaceAll("_", " ")}</span><span aria-hidden="true">/</span><span>{detail.problem.severity}</span></div><CardTitle className="max-w-3xl text-2xl font-medium leading-tight tracking-[-0.03em]">{detail.problem.title}</CardTitle><p className="max-w-3xl text-base leading-7 text-muted-foreground">{detail.problem.description}</p><div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">{detail.problem.district && <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden="true" />{detail.problem.district}{detail.problem.blockOrPanchayat ? `, ${detail.problem.blockOrPanchayat}` : ""}</span>}<span>{detail.problem.appliedTeamsCount} of {detail.problem.maxTeamsAllowed} team slots used</span><span>Updated {formatDate(detail.problem.updatedAt)}</span></div>{detail.evidence.length > 0 && <div className="flex flex-wrap gap-3 border-t border-border pt-4">{detail.evidence.map((item) => <a key={item.id} href={item.mediaUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 text-sm text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><FileText className="h-4 w-4" aria-hidden="true" />{item.caption || "View evidence"}</a>)}</div>}</CardHeader></Card><div className="flex items-end justify-between gap-4"><div><h2 className="text-xl font-medium tracking-[-0.03em]">Submitted approaches</h2><p className="mt-1 text-base text-muted-foreground">Review all proposals before making a selection.</p></div><span className="font-mono text-xs text-muted-foreground">{detail.applications.length} submissions</span></div>{detail.applications.length === 0 ? <Card><CardContent className="p-8 text-base text-muted-foreground">No applications are attached to this problem.</CardContent></Card> : <div className="grid gap-5 xl:grid-cols-2">{detail.applications.map((application) => <ReviewProposalCard key={application.id} application={application} selected={application.status === "selected_winner"} disabled={submitting || Boolean(detail.problem.selectedTeamId)} onSelect={openSelection} />)}</div>}</>}
-        </section>
-      </div>}
+      {error && (
+        <div role="alert" className="flex items-center gap-3 rounded-xl bg-rose-50 p-4 text-xs text-rose-700 border border-rose-200">
+          <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <div className="flex-1">{error}</div>
+          <Button type="button" variant="outline" size="sm" onClick={() => void loadQueue()} className="h-7 text-xs">
+            <RefreshCw className="mr-1.5 h-3 w-3" /> Retry
+          </Button>
+        </div>
+      )}
 
-      {successProjectId && <div role="status" className="flex flex-wrap items-center gap-3 rounded-lg border border-semantic-up/25 bg-semantic-up/5 p-4 text-sm text-semantic-up"><CheckCircle2 className="h-4 w-4" aria-hidden="true" />Selection recorded.<Link className="inline-flex items-center gap-1 font-medium underline underline-offset-4" href={`/projects/${successProjectId}`}>Open project workspace<ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /></Link></div>}
-
-      <dialog ref={dialogRef} aria-labelledby="selection-dialog-title" className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-xl border border-border bg-card p-0 text-card-foreground shadow-xl backdrop:bg-foreground/20"><div className="space-y-5 p-6"><div className="space-y-2"><h2 id="selection-dialog-title" className="text-xl font-medium tracking-[-0.03em]">Select {selectedApplication?.teamName}</h2><p className="text-sm leading-6 text-muted-foreground">This will close the other submissions for {detail?.problem.title || "this problem"} and create a project workspace.</p></div><div className="space-y-2"><label htmlFor="review-notes" className="text-sm font-medium">Review notes <span className="font-normal text-muted-foreground">(optional)</span></label><textarea id="review-notes" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} rows={5} className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Record the decision context for the review history." /></div><div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><Button type="button" variant="outline" onClick={closeSelection} disabled={submitting}>Cancel</Button><Button type="button" onClick={() => void confirmSelection()} disabled={submitting}>{submitting ? "Saving selection…" : "Confirm selection"}</Button></div></div></dialog>
+      {loading ? (
+        <div className="space-y-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-14 animate-pulse bg-neutral-100 rounded-xl" />
+          ))}
+        </div>
+      ) : filteredQueue.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-neutral-200 bg-white p-12 text-center space-y-2">
+          <h3 className="text-xs font-medium text-neutral-900">No reports found</h3>
+          <p className="text-xs text-neutral-500">Your queue is clear for this stage.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-neutral-200/80 bg-white">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-neutral-100 bg-neutral-50/50">
+                <th className="py-2.5 px-4 font-medium text-neutral-500">
+                  Report title
+                </th>
+                <th className="py-2.5 px-4 font-medium text-neutral-500">
+                  Category
+                </th>
+                <th className="py-2.5 px-4 font-medium text-neutral-500">
+                  Location
+                </th>
+                <th className="py-2.5 px-4 font-medium text-neutral-500">
+                  Applications
+                </th>
+                <th className="py-2.5 px-4 font-medium text-neutral-500">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100">
+              {filteredQueue.map((item) => (
+                <tr
+                  key={item.problem.id}
+                  className="hover:bg-neutral-50 transition-colors cursor-pointer"
+                >
+                  <td className="py-3 px-4 max-w-[280px]">
+                    <Link
+                      href={`/government/manage/${item.problem.id}`}
+                      className="block text-neutral-900 font-medium truncate hover:underline"
+                    >
+                      {item.problem.title}
+                    </Link>
+                  </td>
+                  <td className="py-3 px-4 text-neutral-600 whitespace-nowrap">
+                    {item.problem.category.replace("_", " ")}
+                  </td>
+                  <td className="py-3 px-4 text-neutral-600 truncate max-w-[150px]">
+                    {item.problem.district || "General"}
+                  </td>
+                  <td className="py-3 px-4 text-neutral-600">
+                    <span className="font-medium text-neutral-900">
+                      {item.pendingApplicationCount}
+                    </span>
+                    <span className="text-[11px] text-neutral-400 ml-1">
+                      pending
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <Badge variant="secondary">
+                      {item.problem.status.replace("_", " ")}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </main>
   );
 }

@@ -2,17 +2,9 @@
 
 import { startTransition, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  Activity,
-  ArrowRight,
-  FilePlus2,
-  LocateFixed,
-  MessageSquareText,
-  Network,
-  ShieldCheck,
-  UsersRound,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { UserProfile, UserSession } from "@/types/auth";
 
 interface CitizenDashboardProps {
@@ -42,25 +34,60 @@ interface DashboardResponse {
 const statusLabels: Record<string, string> = {
   submitted: "Submitted",
   under_review: "Under review",
-  fused_clustered: "Related reports found",
+  fused_clustered: "Related found",
   validated: "Validated",
   assigned_to_hei: "Team assigned",
-  solution_in_progress: "Solution in progress",
+  solution_in_progress: "In progress",
   resolved_deployed: "Outcome recorded",
 };
 
+function getBadgeVariant(status: string): NonNullable<BadgeProps["variant"]> {
+  switch (status) {
+    case "submitted":
+      return "secondary";
+    case "under_review":
+    case "assigned_to_hei":
+    case "solution_in_progress":
+      return "warning";
+    case "resolved_deployed":
+      return "success";
+    case "validated":
+    case "fused_clustered":
+      return "default";
+    default:
+      return "outline";
+  }
+}
+
 const journey = [
-  { title: "You share what you know", description: "Add the context that feels useful, with evidence when you have it.", icon: FilePlus2 },
-  { title: "Reports are connected", description: "Related reports are compared by meaning, place, and time.", icon: Network },
-  { title: "People review the signal", description: "A human reviewer checks the problem before it moves forward.", icon: ShieldCheck },
-  { title: "Progress stays visible", description: "You can follow updates as work moves from review to action.", icon: Activity },
+  {
+    title: "Share your report",
+    description: "Provide clear context and upload photo or document evidence.",
+  },
+  {
+    title: "Intelligence clustering",
+    description: "Related reports are correlated by domain, location, and timeframe.",
+  },
+  {
+    title: "Official review",
+    description: "Government officers evaluate and validate problem statements.",
+  },
+  {
+    title: "Solution tracking",
+    description: "Follow milestones and verifiable field impact outcomes.",
+  },
 ];
 
-export function CitizenDashboard({ session, profile }: CitizenDashboardProps) {
+const formatDate = (dateString: string) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+
+export function CitizenDashboard({ session }: CitizenDashboardProps) {
   const [reports, setReports] = useState<ReportItem[]>([]);
   const [loading, setLoading] = useState(true);
   const firstName = session.name.split(" ")[0] || "there";
-  const location = profile?.geoContext?.district;
 
   useEffect(() => {
     let active = true;
@@ -83,42 +110,161 @@ export function CitizenDashboard({ session, profile }: CitizenDashboardProps) {
     };
   }, [session.id]);
 
-  const visibleReports = useMemo(() => reports.slice(0, 3), [reports]);
-  const activeReports = reports.filter((report) => report.status !== "resolved_deployed").length;
+  const visibleReports = useMemo(() => reports.slice(0, 5), [reports]);
+  
+  const stats = useMemo(() => {
+    return {
+      active: reports.filter((r) => r.status !== "resolved_deployed").length,
+      submitted: reports.filter((r) => r.status === "submitted").length,
+      underReview: reports.filter((r) => ["under_review", "assigned_to_hei", "solution_in_progress", "validated", "fused_clustered"].includes(r.status)).length,
+      resolved: reports.filter((r) => r.status === "resolved_deployed").length,
+    };
+  }, [reports]);
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <header className="flex flex-col gap-6 border-b border-border pb-8 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-10">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-neutral-200/80 pb-6">
         <div>
-          <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.16em] text-primary">Citizen workspace</p>
-          <h1 className="text-3xl font-medium tracking-[-0.05em] text-foreground sm:text-4xl">Good to see you, {firstName}</h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">Turn what you notice into a clear record that people can review and act on.</p>
-          {location && <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground"><LocateFixed className="h-3.5 w-3.5 text-primary" />{location}</p>}
+          <p className="text-xs font-medium text-neutral-500 mb-1">
+            Citizen workspace
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">
+            Welcome back, {firstName}
+          </h1>
+          <p className="mt-1 text-sm text-neutral-600">
+            Submit community issues and follow their verified resolution cycle.
+          </p>
         </div>
-        <Link href="/report"><Button className="h-11 gap-2 rounded-xl px-5"><FilePlus2 className="h-4 w-4" /> Report a problem</Button></Link>
+        <Link href="/report">
+          <Button size="default" className="gap-1.5 bg-neutral-900 text-white hover:bg-neutral-800">
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            Report issue
+          </Button>
+        </Link>
       </header>
 
-      <section className="grid gap-4 py-8 lg:grid-cols-[1.35fr_0.65fr]">
-        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-          <div className="flex items-start justify-between gap-5"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><MessageSquareText className="h-5 w-5" /></div><span className="rounded-full bg-muted px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Start here</span></div>
-          <h2 className="mt-12 max-w-xl text-2xl font-medium tracking-[-0.04em] text-foreground sm:text-3xl">Have you noticed something that needs attention?</h2>
-          <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">A useful report can be simple. Describe what is happening, where it matters, and what you have seen.</p>
-          <Link href="/report" className="mt-7 inline-flex items-center gap-2 text-sm font-medium text-primary transition-opacity hover:opacity-75">Open the report form <ArrowRight className="h-4 w-4" /></Link>
-        </div>
-        <div className="rounded-2xl border border-border bg-muted/40 p-6 sm:p-8">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Your activity</p>
-          <p className="mt-5 text-4xl font-medium tracking-[-0.05em] text-foreground">{loading ? "..." : activeReports}</p>
-          <p className="mt-1 text-sm text-muted-foreground">reports currently moving through review</p>
-          <Link href="/track" className="mt-7 inline-flex items-center gap-2 text-sm font-medium text-primary transition-opacity hover:opacity-75">View activity <ArrowRight className="h-4 w-4" /></Link>
+      <section className="border-b border-neutral-200/80 pb-8">
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+          <div>
+            <p className="text-3xl font-semibold tracking-tight text-neutral-900">
+              {loading ? "-" : stats.active}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              Active reports
+            </p>
+          </div>
+          <div>
+            <p className="text-3xl font-semibold tracking-tight text-neutral-900">
+              {loading ? "-" : stats.submitted}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              Submitted
+            </p>
+          </div>
+          <div>
+            <p className="text-3xl font-semibold tracking-tight text-neutral-900">
+              {loading ? "-" : stats.underReview}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              Under review
+            </p>
+          </div>
+          <div>
+            <p className="text-3xl font-semibold tracking-tight text-neutral-900">
+              {loading ? "-" : stats.resolved}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              Resolved
+            </p>
+          </div>
         </div>
       </section>
 
-      <section className="border-t border-border py-8">
-        <div className="flex items-end justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Your reports</p><h2 className="mt-2 text-xl font-medium tracking-[-0.03em] text-foreground">Follow what you have shared</h2></div><Link href="/track" className="hidden items-center gap-1 text-xs font-medium text-primary sm:flex">Open tracker <ArrowRight className="h-3.5 w-3.5" /></Link></div>
-        {loading ? <div className="mt-5 rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">Loading recent reports...</div> : visibleReports.length === 0 ? <div className="mt-5 rounded-xl border border-dashed border-border bg-card p-8 text-center"><UsersRound className="mx-auto h-5 w-5 text-muted-foreground" /><p className="mt-3 text-sm font-medium text-foreground">No public reports are available yet.</p><p className="mt-1 text-xs text-muted-foreground">Your report can be the first clear signal.</p><Link href="/report" className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-primary">Create a report <ArrowRight className="h-3.5 w-3.5" /></Link></div> : <div className="mt-5 grid gap-3">{visibleReports.map((report) => <Link key={report.id} href={`/track?submitted=${report.id}`} className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Activity className="h-4 w-4" /></span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-foreground">{report.title}</span><span className="mt-1 block text-xs text-muted-foreground">{statusLabels[report.status] ?? "In review"} · {report.district}</span></span><span className="hidden text-xs text-muted-foreground sm:block">{report.endorsementCount} support</span><ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" /></Link>)}</div>}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-neutral-900">
+            Recent submissions
+          </h2>
+          <Link
+            href="/track"
+            className="text-xs font-medium text-neutral-600 hover:text-neutral-900 transition-colors"
+          >
+            View all
+          </Link>
+        </div>
+        
+        {loading ? (
+          <div className="py-8 text-center text-xs text-neutral-400">
+            Loading recent reports...
+          </div>
+        ) : visibleReports.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-neutral-200 p-8 text-center">
+            <p className="text-xs font-medium text-neutral-900">
+              No reports submitted yet
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              Submit your first report to start tracking community action.
+            </p>
+            <Link
+              href="/report"
+              className="mt-3 inline-block text-xs font-medium text-neutral-900 hover:underline"
+            >
+              Report a problem
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-neutral-100 rounded-xl border border-neutral-200/80 bg-white">
+            {visibleReports.map((report) => (
+              <Link
+                key={report.id}
+                href={`/track?submitted=${report.id}`}
+                className="flex items-center justify-between p-3.5 transition-colors hover:bg-neutral-50"
+              >
+                <div className="min-w-0 pr-4">
+                  <p className="text-xs font-medium text-neutral-900 truncate">
+                    {report.title}
+                  </p>
+                  <p className="text-[11px] text-neutral-500">
+                    {report.district || "General location"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <Badge variant={getBadgeVariant(report.status)}>
+                    {statusLabels[report.status] ?? report.status}
+                  </Badge>
+                  <span className="text-[11px] text-neutral-400">
+                    {formatDate(report.createdAt)}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
-      <section className="border-t border-border py-8"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">What happens next</p><h2 className="mt-2 text-xl font-medium tracking-[-0.03em] text-foreground">A report becomes more useful over time</h2></div><div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{journey.map(({ title, description, icon: Icon }, index) => <div key={title} className="rounded-xl border border-border bg-card p-5"><div className="flex items-center justify-between"><span className="font-mono text-[10px] text-muted-foreground">0{index + 1}</span><Icon className="h-4 w-4 text-primary" /></div><h3 className="mt-10 text-sm font-medium text-foreground">{title}</h3><p className="mt-2 text-xs leading-5 text-muted-foreground">{description}</p></div>)}</div></section>
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-neutral-900">
+          How problem resolution works
+        </h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {journey.map((step, index) => (
+            <div
+              key={index}
+              className="rounded-xl border border-neutral-200/80 bg-white p-4"
+            >
+              <span className="text-xs font-mono text-neutral-400">
+                0{index + 1}
+              </span>
+              <h3 className="mt-2 text-xs font-medium text-neutral-900">
+                {step.title}
+              </h3>
+              <p className="mt-1 text-xs text-neutral-500 leading-relaxed">
+                {step.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

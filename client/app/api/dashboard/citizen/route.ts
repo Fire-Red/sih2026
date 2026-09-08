@@ -2,19 +2,17 @@ import { NextResponse } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { problemReports, users } from "@/lib/db/schema";
+import { AuthorizationError, requireAuthenticatedUser } from "@/lib/auth/server";
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const firebaseUid = searchParams.get("firebaseUid");
-    if (!firebaseUid) {
-      return NextResponse.json({ success: false, error: "A user session is required" }, { status: 400 });
-    }
+    const authUser = await requireAuthenticatedUser(request);
 
     const [user] = await db
       .select({ id: users.id, displayName: users.displayName, role: users.role })
       .from(users)
-      .where(eq(users.firebaseUid, firebaseUid));
+      .where(eq(users.id, authUser.id))
+      .limit(1);
 
     if (!user) {
       return NextResponse.json({ success: false, error: "User profile not found" }, { status: 404 });
@@ -38,8 +36,12 @@ export async function GET(request: Request) {
         },
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     console.error("Error loading citizen dashboard:", error);
     return NextResponse.json({ success: false, error: "Failed to load dashboard" }, { status: 500 });
   }
 }
+

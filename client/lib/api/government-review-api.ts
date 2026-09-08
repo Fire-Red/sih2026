@@ -1,10 +1,12 @@
-import { getSession } from "@/lib/auth/session";
-import type { ReviewDetail, ReviewQueueItem } from "@/types/government-review";
+import { getValidAuthToken } from "@/lib/auth/session";
+import type { ReviewDetail, ReviewProblem, ReviewQueueItem, SimilarReportMatch, SimilarityAlert } from "@/types/government-review";
 import {
   failureResponseSchema,
+  reviewProblemSchema,
   successDetailResponseSchema,
   successQueueResponseSchema,
   successSelectionResponseSchema,
+  successSimilarResponseSchema,
 } from "./schemas/government-review-schemas";
 import { z } from "zod";
 
@@ -16,12 +18,12 @@ interface FailureResponse {
 type ApiFailure = FailureResponse & { status: number };
 
 async function request<T>(path: string, schema: z.ZodType<T>, init?: RequestInit): Promise<T> {
-  const session = getSession();
+  const token = await getValidAuthToken();
   const response = await fetch(path, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init?.headers,
     },
   });
@@ -51,6 +53,16 @@ export async function getReviewQueue(): Promise<ReviewQueueItem[]> {
   return response.reviews;
 }
 
+export async function getSimilarityAlerts(): Promise<SimilarityAlert[]> {
+  const response = await request("/api/government/similar-alerts", z.object({ success: z.literal(true), alerts: z.array(z.object({
+    relationship: z.object({
+      reportId: z.string(), relatedReportId: z.string(), semanticSimilarity: z.string(), geographicDistanceKm: z.string().nullable(), relationshipType: z.string(), confidenceLevel: z.string(), createdAt: z.string(),
+    }),
+    relatedReport: z.object({ id: z.string(), title: z.string(), district: z.string().nullable(), createdAt: z.string() }),
+  })) }));
+  return response.alerts as SimilarityAlert[];
+}
+
 export async function getReviewDetail(problemId: string): Promise<ReviewDetail> {
   const response = await request(`/api/government/reviews/${problemId}`, successDetailResponseSchema);
   return {
@@ -59,6 +71,59 @@ export async function getReviewDetail(problemId: string): Promise<ReviewDetail> 
     applications: response.applications,
     events: response.events,
   };
+}
+
+export async function updateReportStatus(
+  problemId: string,
+  status: "submitted" | "under_review" | "validated" | "rejected"
+): Promise<{ success: true; problem: ReviewProblem }> {
+  return request(
+    "/api/government/status",
+    z.object({ success: z.literal(true), problem: reviewProblemSchema }),
+    {
+      method: "PATCH",
+      body: JSON.stringify({ problemId, status }),
+    }
+  );
+}
+
+export async function getSimilarReports(
+  reportId: string,
+  text: string,
+  category?: string,
+  latitude?: string | null,
+  longitude?: string | null
+): Promise<SimilarReportMatch[]> {
+  const response = await request("/api/government/similar", successSimilarResponseSchema, {
+    method: "POST",
+    body: JSON.stringify({
+      reportId,
+      text,
+      category,
+      latitude,
+      longitude,
+    }),
+  });
+  return response.results;
+}
+
+export async function publishProblemStatement(payload: {
+  problemId: string;
+  mergedReportIds?: string[];
+  title: string;
+  description: string;
+  maxTeamsAllowed?: number;
+  sponsoringDepartment?: string;
+  grantAmount?: string;
+}): Promise<{ success: true; problem: ReviewProblem }> {
+  return request(
+    "/api/government/publish",
+    z.object({ success: z.literal(true), problem: reviewProblemSchema }),
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
 }
 
 export async function selectReviewWinner(
@@ -72,3 +137,14 @@ export async function selectReviewWinner(
   });
 }
 
+export async function updateSimilarReviewMode(
+  problemId: string,
+  mode: "manual_review" | "queue_high_confidence"
+): Promise<void> {
+  const response = await request(
+    "/api/government/review-mode",
+    z.object({ success: z.literal(true), problem: z.object({ id: z.string(), similarReviewMode: z.enum(["manual_review", "queue_high_confidence"]) }) }),
+    { method: "PATCH", body: JSON.stringify({ problemId, mode }) }
+  );
+  void response;
+}

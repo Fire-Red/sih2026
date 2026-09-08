@@ -105,4 +105,21 @@ export const REPORT_CATEGORIES: CategoryOption[] = [
     ],
     description: "Minor forest produce processing, SHG market links, and tribal artisanal value chains.",
   },
+  {
+    id: "accessibility_public_services",
+    name: "Access & Public Services",
+    subcategories: [
+      "Disability Access Barrier",
+      "Missing Public Service",
+      "Difficulty Accessing Benefits",
+      "Unsafe Public Space",
+    ],
+    description: "Access barriers, public services, and places that should work for everyone.",
+  },
+  {
+    id: "other",
+    name: "Something else",
+    subcategories: ["Other community concern"],
+    description: "A problem that does not fit the topics above.",
+  },
 ];

@@ -6,10 +6,15 @@ export interface ReviewProblem {
   severity: string;
   district: string | null;
   blockOrPanchayat: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
   status: string;
   maxTeamsAllowed: number;
   appliedTeamsCount: number;
   selectedTeamId: string | null;
+  similarReviewMode?: "manual_review" | "queue_high_confidence";
+  sponsoringDepartment?: string | null;
+  grantAmount?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,9 +51,25 @@ export interface ReviewEvidence {
 
 export interface ReviewEvent {
   id: string;
-  action: "winner_selected";
+  action: "winner_selected" | "status_updated" | "problem_published";
   notes: string | null;
   createdAt: string;
+}
+
+export interface SimilarReportMatch {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  district: string | null;
+  blockOrPanchayat: string | null;
+  severity: string;
+  status: string;
+  similarity: number;
+  distanceKm: number | null;
+  createdAt: string | null;
+  confidenceLevel?: "high" | "medium" | "low";
+  reviewMode?: "manual_review" | "queue_high_confidence";
 }
 
 export interface ReviewDetail {
@@ -56,4 +77,23 @@ export interface ReviewDetail {
   evidence: ReviewEvidence[];
   applications: ReviewApplication[];
   events: ReviewEvent[];
+}
+
+export interface SimilarityAlert {
+  relationship: {
+    id: string;
+    reportId: string;
+    relatedReportId: string;
+    semanticSimilarity: string;
+    geographicDistanceKm: string | null;
+    relationshipType: string;
+    confidenceLevel: string;
+    createdAt: string;
+  };
+  relatedReport: {
+    id: string;
+    title: string;
+    district: string | null;
+    createdAt: string;
+  };
 }

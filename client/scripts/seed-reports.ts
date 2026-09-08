@@ -1,84 +1,135 @@
+import "dotenv/config";
 import { db } from "../lib/db";
-import { problemReports, problemEvidence } from "../lib/db/schema";
-import { eq } from "drizzle-orm";
+import {
+  activeProjects,
+  capabilityRequirements,
+  governmentReviewEvents,
+  impactMeasurements,
+  impactVerifications,
+  problemApplications,
+  problemEmbeddings,
+  problemEvidence,
+  problemRelationships,
+  problemReports,
+  reportEndorsements,
+  solutionMemory,
+  studentTeams,
+} from "../lib/db/schema";
+
+const testReports = [
+    {
+      title: "Irregular drinking water supply near the market area",
+      description: "Families report that the public water point works only once or twice a week, forcing people to collect water from a distant source.",
+      category: "water_sanitation" as const,
+      subcategory: "Public water supply",
+      severity: "high" as const,
+      affectedPopulationEstimate: 500,
+      state: "Maharashtra",
+      district: "Pune",
+      blockOrPanchayat: "Market area",
+      pinCode: "411001",
+      latitude: "18.5204",
+      longitude: "73.8567",
+      status: "validated" as const,
+    },
+    {
+      title: "Public tap remains dry for several days",
+      description: "Residents near the bus stand describe the same unreliable water schedule and depend on private tankers when the public supply stops.",
+      category: "water_sanitation" as const,
+      subcategory: "Public water supply",
+      severity: "high" as const,
+      affectedPopulationEstimate: 600,
+      state: "Maharashtra",
+      district: "Pune",
+      blockOrPanchayat: "Bus stand area",
+      pinCode: "411002",
+      latitude: "18.5314",
+      longitude: "73.8446",
+      status: "validated" as const,
+    },
+    {
+      title: "Street lighting gaps around the evening market",
+      description: "Several lights around the evening market are not working, making the pedestrian route difficult to use after sunset.",
+      category: "energy_power" as const,
+      subcategory: "Public lighting",
+      severity: "medium" as const,
+      affectedPopulationEstimate: 300,
+      state: "Maharashtra",
+      district: "Pune",
+      blockOrPanchayat: "Evening market",
+      pinCode: "411005",
+      latitude: "18.5196",
+      longitude: "73.8553",
+      status: "submitted" as const,
+    },
+    {
+      title: "Handpump water quality concern near the school",
+      description: "Students and families are asking for testing of a handpump because the water has changed colour and taste during the last month.",
+      category: "water_sanitation" as const,
+      subcategory: "Water quality",
+      severity: "high" as const,
+      affectedPopulationEstimate: 420,
+      state: "West Bengal",
+      district: "Kolkata",
+      blockOrPanchayat: "School neighbourhood",
+      pinCode: "700001",
+      latitude: "22.5726",
+      longitude: "88.3639",
+      status: "submitted" as const,
+    },
+    {
+      title: "Overflowing waste collection point",
+      description: "A shared collection point overflows before the next pickup, leaving waste on the road and affecting nearby shops.",
+      category: "environment_waste" as const,
+      subcategory: "Collection schedule",
+      severity: "medium" as const,
+      affectedPopulationEstimate: 250,
+      state: "Karnataka",
+      district: "Bengaluru Urban",
+      blockOrPanchayat: "Ward collection point",
+      pinCode: "560001",
+      latitude: "12.9716",
+      longitude: "77.5946",
+      status: "submitted" as const,
+    },
+    {
+      title: "Primary health centre transport is unreliable",
+      description: "Older residents report difficulty reaching the primary health centre because the shared transport service is infrequent and not published clearly.",
+      category: "healthcare_nutrition" as const,
+      subcategory: "Access to care",
+      severity: "high" as const,
+      affectedPopulationEstimate: 700,
+      state: "Odisha",
+      district: "Cuttack",
+      blockOrPanchayat: "Health centre route",
+      pinCode: "753001",
+      latitude: "20.4625",
+      longitude: "85.8830",
+      status: "submitted" as const,
+    },
+];
 
 async function runSeed() {
-  console.log("Seeding authentic Jharkhand societal problem reports into Neon PostgreSQL...");
-
-  const testReports = [
-    {
-      title: "Fluoride Contamination in Handpump Groundwater at Satbarwa",
-      description: "Severe dental and skeletal fluorosis observed in children. 14 out of 18 community borewells testing fluoride levels above 3.5 mg/L, far exceeding the WHO 1.5 mg/L threshold.",
-      category: "water_sanitation" as const,
-      subcategory: "Fluoride / Arsenic Contamination",
-      severity: "critical" as const,
-      affectedPopulationEstimate: 850,
-      state: "Jharkhand",
-      district: "Palamu",
-      blockOrPanchayat: "Satbarwa Block, Panchayat Bhawan Ward 3",
-      pinCode: "822126",
-      latitude: "23.9182",
-      longitude: "84.2255",
-      formattedAddress: "Village Satbarwa, Palamu, Jharkhand - 822126",
-      status: "assigned_to_hei" as const,
-      endorsementCount: 47,
-      assignedInstitutionName: "Birsa Agricultural University (BAU) & BIT Mesra",
-      assignedProjectTitle: "Solar-Assisted Electrocoagulation Water Fluoride Remediation",
-    },
-    {
-      title: "Monsoon Gully Erosion and Washed-Away Culvert on Rural Livelihood Road",
-      description: "A 40-foot culvert washed out during heavy rainfall, isolating 4 tribal villages from the weekly Haat market and health sub-centre transit.",
-      category: "rural_infrastructure" as const,
-      subcategory: "Damaged Culvert / Bridge",
-      severity: "high" as const,
-      affectedPopulationEstimate: 1200,
-      state: "Jharkhand",
-      district: "Gumla",
-      blockOrPanchayat: "Bishunpur Block",
-      pinCode: "835331",
-      latitude: "23.3812",
-      longitude: "84.3615",
-      formattedAddress: "Bishunpur Rural Road KM 12, Gumla, Jharkhand",
-      status: "validated" as const,
-      endorsementCount: 29,
-      assignedInstitutionName: "National Institute of Technology (NIT) Jamshedpur",
-      assignedProjectTitle: "Rapid Modular Geopolymer Concrete Culvert Pre-Fabrication",
-    },
-    {
-      title: "Soil Acidity and Non-Aerated Paddy Field Distress",
-      description: "Acidic soil (pH 4.8) leading to aluminium toxicity and 40% reduction in upland paddy yield across 220 hectares of farmer plots.",
-      category: "agriculture_irrigation" as const,
-      subcategory: "Soil Acidification / Degradation",
-      severity: "high" as const,
-      affectedPopulationEstimate: 450,
-      state: "Jharkhand",
-      district: "Ranchi",
-      blockOrPanchayat: "Kanke Block",
-      pinCode: "834006",
-      latitude: "23.4350",
-      longitude: "85.3210",
-      formattedAddress: "Kanke Agri Cluster, Ranchi, Jharkhand - 834006",
-      status: "fused_clustered" as const,
-      endorsementCount: 18,
-      assignedInstitutionName: "Birsa Agricultural University (BAU)",
-      assignedProjectTitle: "Biochar & Basic Slag Soil Amelioration Field Trials",
-    },
-  ];
+  await db.delete(impactMeasurements);
+  await db.delete(impactVerifications);
+  await db.delete(solutionMemory);
+  await db.delete(governmentReviewEvents);
+  await db.delete(problemRelationships);
+  await db.delete(problemEmbeddings);
+  await db.delete(problemEvidence);
+  await db.delete(problemApplications);
+  await db.delete(activeProjects);
+  await db.delete(capabilityRequirements);
+  await db.delete(reportEndorsements);
+  await db.delete(problemReports);
+  await db.delete(studentTeams);
 
   for (const item of testReports) {
-    const [inserted] = await db.insert(problemReports).values(item).returning();
-    console.log(`✓ Seeded problem report [${inserted.id}]: ${inserted.title}`);
-
-    // Seed Evidence
-    await db.insert(problemEvidence).values({
-      problemReportId: inserted.id,
-      mediaType: "image",
-      mediaUrl: "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=600&q=80",
-      caption: "Groundwater discoloration and corroded borewell head",
-    });
+    const [inserted] = await db.insert(problemReports).values(item).returning({ id: problemReports.id });
+    console.log(`Seeded problem report [${inserted.id}]: ${item.title}`);
   }
 
-  console.log("All sample problem reports seeded successfully.");
+  console.log(`Reset workflow data and seeded ${testReports.length} neutral India wide reports.`);
 }
 
 runSeed()

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { problemReports, problemEvidence, users } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { processNewReport } from "@/lib/server/report-processing";
 
 export async function GET(request: Request) {
   try {
@@ -123,6 +124,14 @@ export async function POST(request: Request) {
       }));
       await db.insert(problemEvidence).values(evidenceValues);
     }
+
+    await processNewReport({
+      reportId: insertedReport.id,
+      text: `${insertedReport.title}\n${insertedReport.description}`,
+      category: insertedReport.category,
+      latitude: insertedReport.latitude,
+      longitude: insertedReport.longitude,
+    });
 
     return NextResponse.json({
       success: true,

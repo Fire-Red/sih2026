@@ -25,8 +25,10 @@ export function WorkspaceFrame({ children }: WorkspaceFrameProps) {
   return (
     <div className="min-h-screen bg-background">
       <DashboardSidebar session={session} />
-      <main className="min-h-screen px-4 py-8 sm:px-8 lg:py-12 lg:pl-72 lg:pr-12">
-        {children}
+      <main className={`min-h-screen ${session.role === "citizen" ? "" : "lg:pl-60"}`}>
+        <div className="mx-auto max-w-6xl px-6 py-8 sm:px-8 lg:py-10">
+          {children}
+        </div>
       </main>
     </div>
   );

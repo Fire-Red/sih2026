@@ -11,9 +11,9 @@ import { LandingFooter } from "@/components/landing/landing-footer";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-primary/15 selection:text-primary">
+    <div className="min-h-screen bg-white flex flex-col font-sans">
       <LandingNav />
-      <main className="flex-1">
+      <main className="flex-1 pt-14">
         <LandingHero />
         <LandingProof />
         <LandingPipeline />

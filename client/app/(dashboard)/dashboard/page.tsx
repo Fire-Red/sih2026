@@ -4,7 +4,7 @@ import { startTransition, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { useUserStore } from "@/store/use-user-store";
-import { UserSession } from "@/types/auth";
+import type { UserSession } from "@/types/auth";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { CitizenDashboard } from "@/components/dashboard/citizen-dashboard";
 import { StudentDashboardView } from "@/components/student/student-dashboard-view";
@@ -36,21 +36,14 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <DashboardSidebar session={session} />
-      <main className="min-h-screen px-4 py-8 sm:px-8 lg:pl-72 lg:pr-12 lg:py-12">
-        <div className="mx-auto max-w-5xl">
+      <main className={`min-h-screen ${session.role === "citizen" ? "" : "lg:pl-60"}`}>
+        <div className="mx-auto max-w-6xl px-6 py-8 sm:px-8 lg:py-10">
           {session.role === "citizen" && (
             <CitizenDashboard session={session} profile={userProfile} />
           )}
-          {session.role === "student" && (
-            <StudentDashboardView />
-          )}
-          {session.role === "institution" && (
-            <InstitutionDashboardView />
-          )}
-          {session.role === "government" && (
-            <GovernmentDashboardView />
-          )}
-          {session.role === "admin" && (
+          {session.role === "student" && <StudentDashboardView />}
+          {session.role === "institution" && <InstitutionDashboardView />}
+          {(session.role === "government" || session.role === "admin") && (
             <GovernmentDashboardView />
           )}
         </div>
